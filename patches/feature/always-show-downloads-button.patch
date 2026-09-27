@@ -4,8 +4,9 @@ Date: Sun, 27 Sep 2026 10:52:37 +0530
 Subject: Always show downloads button in action bar
 
 ---
- .../src/main/java/org/telegram/ui/DialogsActivity.java        | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ .../java/org/telegram/ui/DialogsActivity.java |  7 +++-
+ .../org/telegram/ui/DownloadProgressIcon.java | 41 +++++++++++++++++--
+ 2 files changed, 43 insertions(+), 5 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
 index 0000000..0000000 100644
@@ -20,12 +21,96 @@ index 0000000..0000000 100644
      }
  
      private void showSearch(boolean show, boolean startFromDownloads, boolean animated, boolean forceNotOnlyDialogs) {
-@@ -10535,7 +10535,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -10535,7 +10535,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                  break;
              }
          }
 -        if ((getDownloadController().hasUnviewedDownloads() || showDownloads || (downloadsItem.getVisibility() == View.VISIBLE && downloadsItem.getAlpha() == 1 && !force))) {
++        if (downloadProgressIcon != null) {
++            downloadProgressIcon.update(showDownloads, getDownloadController().hasUnviewedDownloads());
++        }
 +        if (xie.fa.gram.InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.getValue() || (getDownloadController().hasUnviewedDownloads() || showDownloads || (downloadsItem.getVisibility() == View.VISIBLE && downloadsItem.getAlpha() == 1 && !force))) {
              downloadsItemVisible = true;
          } else {
              downloadsItemVisible = false;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java b/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java
+@@ -53,7 +53,33 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+ 
+         downloadImageReceiver.setAutoRepeat(1);
+         downloadDrawable.setAutoRepeat(1);
+-        downloadDrawable.start();
++    }
++
++    public void update(boolean showDownloads, boolean hasUnviewedDownloads) {
++        if (showDownloads) {
++            showCompletedIcon = false;
++            if (!downloadDrawable.isRunning()) {
++                downloadDrawable.start();
++            }
++            updateDownloadingListeners();
++            updateProgress();
++        } else if (hasUnviewedDownloads) {
++            downloadDrawable.stop();
++            downloadDrawable.setCurrentFrame(0, false);
++            showCompletedIcon = true;
++            progress = 1f;
++            currentProgress = 1f;
++            invalidate();
++        } else {
++            showCompletedIcon = false;
++            progress = 0;
++            currentProgress = 0;
++            downloadDrawable.stop();
++            downloadDrawable.setCurrentFrame(0, false);
++            downloadCompleteDrawable.stop();
++            downloadCompleteDrawable.setCurrentFrame(0, false);
++            invalidate();
++        }
+     }
+ 
+     public void updateColors() {
+@@ -124,6 +150,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+                 downloadCompleteDrawable.setCurrentFrame(0, false);
+                 downloadCompleteDrawable.start();
+                 showCompletedIcon = true;
++                downloadDrawable.stop();
+             }
+         }
+         canvas.restore();
+@@ -170,15 +197,23 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+                 currentListeners.add(progressObserver);
+             }
+         }
+-        if (currentListeners.size() == 0 && !wasDrawn) {
++        if (currentListeners.size() > 0) {
++            if (!downloadDrawable.isRunning()) {
++                downloadDrawable.start();
++            }
++        } else {
+             if (DownloadController.getInstance(currentAccount).hasUnviewedDownloads()) {
+                 progress = 1f;
+                 currentProgress = 1f;
+                 showCompletedIcon = true;
++                downloadDrawable.stop();
++                downloadDrawable.setCurrentFrame(0, false);
+             } else {
+                 progress = 0;
+                 currentProgress = 0;
+                 showCompletedIcon = false;
++                downloadDrawable.stop();
++                downloadDrawable.setCurrentFrame(0, false);
+             }
+         }
+     }
+@@ -192,7 +227,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+             downloaded += currentListeners.get(i).downloaded;
+         }
+         if (total == 0) {
+-            progress = 1f;
++            progress = DownloadController.getInstance(currentAccount).hasUnviewedDownloads() ? 1f : 0;
+         } else {
+             progress = downloaded / (float) total;
+         }
