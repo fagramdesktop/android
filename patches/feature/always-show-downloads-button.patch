@@ -20,7 +20,7 @@ index 0000000..0000000 100644
      }
  
      private void showSearch(boolean show, boolean startFromDownloads, boolean animated, boolean forceNotOnlyDialogs) {
-@@ -10533,7 +10533,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -10535,7 +10535,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                  break;
              }
          }

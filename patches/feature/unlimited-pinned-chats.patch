@@ -7,8 +7,8 @@ Subject: Allow pinning chats beyond server limit locally
  .../messenger/MessagesController.java         | 136 +++++++++++++++---
  .../telegram/ui/Adapters/DialogsAdapter.java  |  11 ++
  .../org/telegram/ui/Cells/DialogCell.java     |   4 +-
- .../java/org/telegram/ui/DialogsActivity.java |  77 +++++++++-
- 4 files changed, 207 insertions(+), 21 deletions(-)
+ .../java/org/telegram/ui/DialogsActivity.java |  81 ++++++++++-
+ 4 files changed, 210 insertions(+), 22 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
 index 0000000..0000000 100644
@@ -292,23 +292,34 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
-@@ -8888,6 +8888,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -8830,6 +8830,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+ 
+         final boolean[] hasPinAction = new boolean[1];
+         hasPinAction[0] = true;
++        final boolean[] pinLimitReached = new boolean[1];
+         TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+         boolean containsFilter;
+         final MessagesController.DialogFilter filter = (
+@@ -8887,7 +8888,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+             int newFilterAlwaysShowCount = newPinnedCount + newPinnedSecretCount - alreadyAdded;
              boolean secretLimitReached = containsFilter && filter != null ? false : newPinnedSecretCount + pinnedSecretCount > maxPinnedCount;
              boolean dialogsLimitReached = containsFilter && filter != null ? newFilterAlwaysShowCount > 0 && filter.alwaysShow.size() + newFilterAlwaysShowCount > maxPinnedCount : newPinnedCount + pinnedCount - alreadyAdded > maxPinnedCount;
-             hasPinAction[0] = !(secretLimitReached || dialogsLimitReached);
+-            hasPinAction[0] = !(secretLimitReached || dialogsLimitReached);
++            pinLimitReached[0] = secretLimitReached || dialogsLimitReached;
++            hasPinAction[0] = !pinLimitReached[0];
 +            if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
-+                if (isDialogPinned(dialog) || secretLimitReached || dialogsLimitReached) {
++                if (isDialogPinned(dialog) || pinLimitReached[0]) {
 +                    hasPinAction[0] = true;
 +                }
 +            }
          }
  
          if (hasPinAction[0]) {
-@@ -8917,6 +8922,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -8917,6 +8924,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                          return;
                      }
                      if (!isDialogPinned(dialog)) {
-+                        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && (secretLimitReached || dialogsLimitReached)) {
++                        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && pinLimitReached[0]) {
 +                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 +                            builder.setTitle(LocaleController.getString(R.string.InuPinLocallyAlertTitle));
 +                            builder.setMessage(LocaleController.getString(R.string.InuPinLocallyAlertText));
@@ -324,7 +335,7 @@ index 0000000..0000000 100644
 +                            });
 +                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
 +                            if (folderId == 0 && filter == null) {
-+                                builder.setNeutralButton(LocaleController.getString(R.string.ViewLimits), (di, w) -> {
++                                builder.setNeutralButton(LocaleController.getString(R.string.IncreaseLimit), (di, w) -> {
 +                                    LimitReachedBottomSheet sheet = new LimitReachedBottomSheet(DialogsActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_PIN_DIALOGS, currentAccount, null);
 +                                    showDialog(sheet);
 +                                });
@@ -335,7 +346,7 @@ index 0000000..0000000 100644
                          pinDialog(dialogId, true, filter, minPinnedNum, true);
                          undoView.showWithAction(0, UndoView.ACTION_PIN_DIALOGS, 1, 1600, null, null);
                          if (filter != null) {
-@@ -8931,8 +8960,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -8931,8 +8962,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                              }
                          }
                      } else {
@@ -350,7 +361,7 @@ index 0000000..0000000 100644
                      }
                      if (filter != null) {
                          FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
-@@ -9294,6 +9329,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -9294,6 +9331,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
          if (!movingDialogFilters.isEmpty()) {
              for (int a = 0, N = movingDialogFilters.size(); a < N; a++) {
                  MessagesController.DialogFilter filter = movingDialogFilters.get(a);
@@ -360,7 +371,7 @@ index 0000000..0000000 100644
                  FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
              }
              movingDialogFilters.clear();
-@@ -9346,8 +9384,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -9346,8 +9386,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
              filter = null;
          }
          if (filter != null) {
@@ -375,7 +386,7 @@ index 0000000..0000000 100644
          return dialog.pinned;
      }
  
-@@ -9461,6 +9505,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -9461,6 +9507,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
              boolean secretLimitReached = containsFilter && filter != null ? false : newPinnedSecretCount + pinnedSecretCount > maxPinnedCount;
              boolean dialogsLimitReached = containsFilter && filter != null ? newFilterAlwaysShowCount > 0 && filter.alwaysShow.size() + newFilterAlwaysShowCount > maxPinnedCount : newPinnedCount + pinnedCount - alreadyAdded > maxPinnedCount;
              if (secretLimitReached || dialogsLimitReached) {
@@ -395,7 +406,7 @@ index 0000000..0000000 100644
 +                    });
 +                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
 +                    if (folderId == 0 && filter == null) {
-+                        builder.setNeutralButton(LocaleController.getString(R.string.ViewLimits), (di, w) -> {
++                        builder.setNeutralButton(LocaleController.getString(R.string.IncreaseLimit), (di, w) -> {
 +                            LimitReachedBottomSheet sheet = new LimitReachedBottomSheet(DialogsActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_PIN_DIALOGS, currentAccount, null);
 +                            showDialog(sheet);
 +                        });
@@ -406,7 +417,7 @@ index 0000000..0000000 100644
                  if (folderId != 0 || filter != null) {
                      AlertsCreator.showSimpleAlert(DialogsActivity.this, LocaleController.formatString("PinFolderLimitReached", R.string.PinFolderLimitReached, LocaleController.formatPluralString("Chats", maxPinnedCount)));
                  } else {
-@@ -9863,9 +9931,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -9863,9 +9933,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
          if (filter != null) {
              int index = filter.pinnedDialogs.get(selectedDialog, Integer.MIN_VALUE);
              if (!pin && index == Integer.MIN_VALUE) {
