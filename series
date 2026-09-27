@@ -330,3 +330,4 @@ bugfix/bot-webview-container-npe.patch
 feature/clickable-bio-links.patch
 bugfix/update-version-comparison.patch
 feature/members-filter.patch
+feature/unlimited-pinned-chats.patch

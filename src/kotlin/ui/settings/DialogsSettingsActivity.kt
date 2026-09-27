@@ -101,6 +101,14 @@ class DialogsSettingsActivity : SettingsPageActivity() {
             )
         )
         items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_UNLIMITED_PINNED_CHATS,
+                R.string.InuUnlimitedPinnedChats,
+                R.string.InuUnlimitedPinnedChatsInfo,
+                InuConfig.UNLIMITED_PINNED_CHATS.value
+            )
+        )
+        items.add(
             UItem.asButton(
                 BUTTON_COMMUNITY_DISPLAY_MODE,
                 LocaleController.getString(R.string.InuCommunityDisplayMode),
@@ -255,6 +263,16 @@ class DialogsSettingsActivity : SettingsPageActivity() {
                 (view as? NotificationsCheckCell)?.isChecked = new
             }
 
+            TOGGLE_UNLIMITED_PINNED_CHATS -> {
+                val new = InuConfig.UNLIMITED_PINNED_CHATS.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+                for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+                    if (!UserConfig.getInstance(i).isClientActivated) continue
+                    MessagesController.getInstance(i).sortDialogs(null)
+                    NotificationCenter.getInstance(i).postNotificationName(NotificationCenter.dialogsNeedReload)
+                }
+            }
+
             TOGGLE_BOTTOM_TABS_HIDE -> {
                 val new = InuConfig.BOTTOM_TABS_HIDE.toggle()
                 (view as? NotificationsCheckCell)?.isChecked = new
@@ -405,6 +423,7 @@ class DialogsSettingsActivity : SettingsPageActivity() {
         private val TOGGLE_FAB_OFFSET_FOR_BOTTOM_BAR = InuUtils.generateId()
         private val TOGGLE_FAB_LEFT_SIDE = InuUtils.generateId()
         private val TOGGLE_INTERACTIVE_CHAT_PREVIEW = InuUtils.generateId()
+        private val TOGGLE_UNLIMITED_PINNED_CHATS = InuUtils.generateId()
         private val TOGGLE_HIDE_ALL_CHATS_TAB = InuUtils.generateId()
         private val BUTTON_COMMUNITY_DISPLAY_MODE = InuUtils.generateId()
         private val BUTTON_TITLE_TEXT = InuUtils.generateId()
@@ -447,6 +466,7 @@ class DialogsSettingsActivity : SettingsPageActivity() {
                 SearchRegistry.Entry("disable-swipe-to-hide-general-topic", R.string.InuDisableSwipeToHideGeneralTopic, TOGGLE_DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC),
                 SearchRegistry.Entry("hide-bot-webview-dialogs", R.string.InuHideBotWebView, TOGGLE_BOT_WEBVIEW_BUTTON),
                 SearchRegistry.Entry("disable-chat-preview-expand", R.string.InuDisableChatPreviewExpand, TOGGLE_INTERACTIVE_CHAT_PREVIEW),
+                SearchRegistry.Entry("unlimited-pinned-chats", R.string.InuUnlimitedPinnedChats, TOGGLE_UNLIMITED_PINNED_CHATS),
                 SearchRegistry.Entry("community-display-mode", R.string.InuCommunityDisplayMode, BUTTON_COMMUNITY_DISPLAY_MODE),
                 SearchRegistry.Entry("bottom-tabs-hide", R.string.InuBottomTabsHide, TOGGLE_BOTTOM_TABS_HIDE),
                 SearchRegistry.Entry("hide-contacts-tab", R.string.InuHideContactsTab, TOGGLE_HIDE_CONTACTS_TAB),

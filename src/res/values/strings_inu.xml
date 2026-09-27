@@ -804,4 +804,11 @@
     <string name="InuMembersFilterAdmins">Administrators</string>
     <string name="InuMembersFilterBots">Bots</string>
     <string name="InuMembersFilterDeleted">Deleted Account</string>
+
+    <!-- Local pinned chats -->
+    <string name="InuUnlimitedPinnedChats">Unlimited pinned chats</string>
+    <string name="InuUnlimitedPinnedChatsInfo">Allow pinning chats beyond the server limit on this device. Chats pinned beyond the limit are saved locally.</string>
+    <string name="InuPinLocally">Pin locally</string>
+    <string name="InuPinLocallyAlertTitle">Pin chat locally?</string>
+    <string name="InuPinLocallyAlertText">You have reached the server limit of pinned chats. Would you like to pin this chat locally on this device instead?</string>
 </resources>

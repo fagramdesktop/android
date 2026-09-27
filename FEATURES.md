@@ -62,6 +62,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - folder display modes: titles / titles+icons / icons-only (supports custom icon packs: Solar & VKUI)
 - built-in local folders: device-only chat folders that don't count against Telegram's folder limits (Private Chats, Groups, Supergroups, Basic Groups, Channels, Bots, Admin, Unread, Unmuted) - *ported from [NagramXF](https://github.com/Keeperorowner/NagramXF)*
   - allow reordering "All Chats" tab to any slot without Telegram Premium when local folders are active
+- 🐶 unlimited local pinned chats: pin chats beyond the server limit on this device (Main chat list, Archive, and real server-synced folders); stored locally, seamlessly interleaved with server pins in a unified visual order with drag-and-drop reordering
 - folder unread counter modes: hide / regular / exclude muted / 🐶 exclude muted non-dms
 - hide "all chats" folder tab
 - custom title text: FAgram / @username / first name / "Chats"

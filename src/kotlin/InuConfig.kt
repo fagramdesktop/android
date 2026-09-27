@@ -314,6 +314,9 @@ object InuConfig {
     @JvmField
     val DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC = BoolItem("disable_swipe_to_hide_general_topic", true)
 
+    @JvmField
+    val UNLIMITED_PINNED_CHATS = BoolItem("unlimited_pinned_chats", false)
+
     class PullDownActionItem : IntItem("pull_down_action", REVEAL_ARCHIVE) {
         // Migrate the old `open_archive_on_pull` boolean toggle: on → open archive, off → reveal (stock).
         override fun read(prefs: SharedPreferences): Int {

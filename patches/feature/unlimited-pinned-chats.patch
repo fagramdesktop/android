@@ -1,0 +1,426 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Sun, 27 Sep 2026 10:10:40 +0530
+Subject: Allow pinning chats beyond server limit locally
+
+---
+ .../messenger/MessagesController.java         | 136 +++++++++++++++---
+ .../telegram/ui/Adapters/DialogsAdapter.java  |  11 ++
+ .../org/telegram/ui/Cells/DialogCell.java     |   4 +-
+ .../java/org/telegram/ui/DialogsActivity.java |  77 +++++++++-
+ 4 files changed, 207 insertions(+), 21 deletions(-)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+@@ -1385,6 +1385,9 @@ public class MessagesController extends BaseController implements NotificationCe
+             if (alwaysShow.contains(dialogId)) {
+                 return true;
+             }
++            if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterPinned(accountInstance.getCurrentAccount(), id, dialogId)) {
++                return true;
++            }
+             if (d.folder_id != 0 && (flags & DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) != 0) {
+                 return false;
+             }
+@@ -1491,7 +1494,30 @@ public class MessagesController extends BaseController implements NotificationCe
+             return -1;
+         } else if (!(dialog1 instanceof TLRPC.TL_dialogFolder) && dialog2 instanceof TLRPC.TL_dialogFolder) {
+             return 1;
+-        } else if (pinnedNum1 == Integer.MIN_VALUE && pinnedNum2 != Integer.MIN_VALUE) {
++        }
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && sortingDialogFilter != null && !sortingDialogFilter.local) {
++            boolean pin1 = pinnedNum1 != Integer.MIN_VALUE || xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, sortingDialogFilter.id, dialog1.id);
++            boolean pin2 = pinnedNum2 != Integer.MIN_VALUE || xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, sortingDialogFilter.id, dialog2.id);
++            if (!pin1 && pin2) {
++                return 1;
++            } else if (pin1 && !pin2) {
++                return -1;
++            } else if (pin1) {
++                int idx1 = xie.fa.gram.helpers.dialogs.LocalPinHelper.getFilterMergedOrderIndex(currentAccount, sortingDialogFilter.id, dialog1.id);
++                int idx2 = xie.fa.gram.helpers.dialogs.LocalPinHelper.getFilterMergedOrderIndex(currentAccount, sortingDialogFilter.id, dialog2.id);
++                if (idx1 != idx2) {
++                    return Integer.compare(idx1, idx2);
++                }
++                if (pinnedNum1 > pinnedNum2) {
++                    return 1;
++                } else if (pinnedNum1 < pinnedNum2) {
++                    return -1;
++                } else {
++                    return 0;
++                }
++            }
++        } else {
++        if (pinnedNum1 == Integer.MIN_VALUE && pinnedNum2 != Integer.MIN_VALUE) {
+             return 1;
+         } else if (pinnedNum1 != Integer.MIN_VALUE && pinnedNum2 == Integer.MIN_VALUE) {
+             return -1;
+@@ -1504,6 +1530,7 @@ public class MessagesController extends BaseController implements NotificationCe
+                 return 0;
+             }
+         }
++        }
+         MediaDataController mediaDataController = getMediaDataController();
+         long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id, 0));
+         long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id, 0));
+@@ -1527,7 +1554,30 @@ public class MessagesController extends BaseController implements NotificationCe
+             return -1;
+         } else if (!(dialog1 instanceof TLRPC.TL_dialogFolder) && dialog2 instanceof TLRPC.TL_dialogFolder) {
+             return 1;
+-        } else if (!dialog1.pinned && dialog2.pinned) {
++        }
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++            boolean pin1 = dialog1.pinned || xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, dialog1.folder_id, dialog1.id);
++            boolean pin2 = dialog2.pinned || xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, dialog2.folder_id, dialog2.id);
++            if (!pin1 && pin2) {
++                return 1;
++            } else if (pin1 && !pin2) {
++                return -1;
++            } else if (pin1) {
++                int idx1 = xie.fa.gram.helpers.dialogs.LocalPinHelper.getMergedOrderIndex(currentAccount, dialog1.folder_id, dialog1.id);
++                int idx2 = xie.fa.gram.helpers.dialogs.LocalPinHelper.getMergedOrderIndex(currentAccount, dialog2.folder_id, dialog2.id);
++                if (idx1 != idx2) {
++                    return Integer.compare(idx1, idx2);
++                }
++                if (dialog1.pinnedNum < dialog2.pinnedNum) {
++                    return 1;
++                } else if (dialog1.pinnedNum > dialog2.pinnedNum) {
++                    return -1;
++                } else {
++                    return 0;
++                }
++            }
++        } else {
++        if (!dialog1.pinned && dialog2.pinned) {
+             return 1;
+         } else if (dialog1.pinned && !dialog2.pinned) {
+             return -1;
+@@ -1540,6 +1590,7 @@ public class MessagesController extends BaseController implements NotificationCe
+                 return 0;
+             }
+         }
++        }
+         MediaDataController mediaDataController = getMediaDataController();
+         long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id, 0));
+         long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id, 0));
+@@ -17375,6 +17426,7 @@ public class MessagesController extends BaseController implements NotificationCe
+         req.force = true;
+ 
+         long newTaskId;
++        boolean realOrderChanged = true;
+         if (taskId == 0) {
+             ArrayList<TLRPC.Dialog> dialogs = getDialogs(folderId);
+             if (dialogs.isEmpty()) {
+@@ -17390,6 +17442,11 @@ public class MessagesController extends BaseController implements NotificationCe
+                     continue;
+                 }
+                 if (!dialog.pinned) {
++                    if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++                        if (xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, folderId, dialog.id)) {
++                            continue;
++                        }
++                    }
+                     if (dialog.id != promoDialogId) {
+                         break;
+                     }
+@@ -17413,31 +17470,62 @@ public class MessagesController extends BaseController implements NotificationCe
+                     }
+                 }
+             }
++            if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++                dids = xie.fa.gram.helpers.dialogs.LocalPinHelper.getRealPinnedDialogsOrder(currentAccount, folderId);
++                xie.fa.gram.helpers.dialogs.LocalPinHelper.assignRealPinnedNums(dialogs, dids, pinned);
++                req.order.clear();
++                size = 0;
++                for (int a = 0; a < dids.size(); a++) {
++                    long did = dids.get(a);
++                    if (!DialogObject.isEncryptedDialog(did)) {
++                        TLRPC.InputPeer inputPeer = getInputPeer(did);
++                        TLRPC.Chat chat = getMessagesController().getChat(-did);
++                        if (ChatObject.isCommunity(chat)) {
++                            TLRPC.TL_inputDialogPeerCommunity inputDialogPeerCommunity = new TLRPC.TL_inputDialogPeerCommunity();
++                            inputDialogPeerCommunity.community = getMessagesController().getInputChannel(chat.id);
++                            req.order.add(inputDialogPeerCommunity);
++                            size += inputDialogPeerCommunity.getObjectSize();
++                        } else {
++                            TLRPC.TL_inputDialogPeer inputDialogPeer = new TLRPC.TL_inputDialogPeer();
++                            inputDialogPeer.peer = inputPeer;
++                            req.order.add(inputDialogPeer);
++                            size += inputDialogPeer.getObjectSize();
++                        }
++                    }
++                }
++            }
+             getMessagesStorage().setDialogsPinned(dids, pinned);
+ 
+-            NativeByteBuffer data = null;
+-            try {
+-                data = new NativeByteBuffer(4 + 4 + 4 + size);
+-                data.writeInt32(16);
+-                data.writeInt32(folderId);
+-                data.writeInt32(req.order.size());
+-                for (int a = 0, N = req.order.size(); a < N; a++) {
+-                    req.order.get(a).serializeToStream(data);
++            realOrderChanged = !xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() || (dids.size() > 0 && xie.fa.gram.helpers.dialogs.LocalPinHelper.hasRealOrderChanged(currentAccount, folderId, dids));
++            if (realOrderChanged) {
++                NativeByteBuffer data = null;
++                try {
++                    data = new NativeByteBuffer(4 + 4 + 4 + size);
++                    data.writeInt32(16);
++                    data.writeInt32(folderId);
++                    data.writeInt32(req.order.size());
++                    for (int a = 0, N = req.order.size(); a < N; a++) {
++                        req.order.get(a).serializeToStream(data);
++                    }
++                } catch (Exception e) {
++                    FileLog.e(e);
+                 }
+-            } catch (Exception e) {
+-                FileLog.e(e);
++                newTaskId = getMessagesStorage().createPendingTask(data);
++            } else {
++                newTaskId = 0;
+             }
+-            newTaskId = getMessagesStorage().createPendingTask(data);
+         } else {
+             req.order = order;
+             newTaskId = taskId;
+         }
+ 
+-        getConnectionsManager().sendRequest(req, (response, error) -> {
+-            if (newTaskId != 0) {
+-                getMessagesStorage().removePendingTask(newTaskId);
+-            }
+-        });
++        if (taskId != 0 || realOrderChanged) {
++            getConnectionsManager().sendRequest(req, (response, error) -> {
++                if (newTaskId != 0) {
++                    getMessagesStorage().removePendingTask(newTaskId);
++                }
++            });
++        }
+     }
+ 
+     public boolean pinDialog(long dialogId, boolean pin, TLRPC.InputPeer peer, long taskId) {
+@@ -22405,6 +22493,9 @@ public class MessagesController extends BaseController implements NotificationCe
+         dialogs.clear();
+         dialogsForward.clear();
+         sortingDialogFilter = filter;
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && sortingDialogFilter != null && !sortingDialogFilter.local) {
++            xie.fa.gram.helpers.dialogs.LocalPinHelper.reconcileFilter(currentAccount, sortingDialogFilter);
++        }
+         try {
+             Collections.sort(allDialogs, dialogDateComparator);
+         } catch (Exception e) {
+@@ -22436,6 +22527,9 @@ public class MessagesController extends BaseController implements NotificationCe
+                 }
+             }
+         }
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++            xie.fa.gram.helpers.dialogs.LocalPinHelper.reconcileFolders(currentAccount, allDialogs);
++        }
+         try {
+             Collections.sort(allDialogs, dialogComparator);
+         } catch (Exception e) {}
+@@ -22615,6 +22709,9 @@ public class MessagesController extends BaseController implements NotificationCe
+                 if (sortingDialogFilter == null) {
+                     continue;
+                 }
++                if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && !sortingDialogFilter.local) {
++                    xie.fa.gram.helpers.dialogs.LocalPinHelper.reconcileFilter(currentAccount, sortingDialogFilter);
++                }
+                 ArrayList<TLRPC.Dialog> dialogs = sortingDialogFilter.dialogs;
+                 ArrayList<TLRPC.Dialog> dialogsForward = sortingDialogFilter.dialogsForward;
+                 dialogs.clear();
+@@ -22654,6 +22751,9 @@ public class MessagesController extends BaseController implements NotificationCe
+             }
+         }
+ 
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++            xie.fa.gram.helpers.dialogs.LocalPinHelper.reconcileFolders(currentAccount, allDialogs);
++        }
+         try {
+             Collections.sort(allDialogs, dialogComparator);
+         } catch (Exception e) {}
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Adapters/DialogsAdapter.java b/TMessagesProj/src/main/java/org/telegram/ui/Adapters/DialogsAdapter.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Adapters/DialogsAdapter.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Adapters/DialogsAdapter.java
+@@ -1212,6 +1212,16 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
+         int toIndex = fixPosition(toPosition);
+         TLRPC.Dialog fromDialog = dialogs.get(fromIndex);
+         TLRPC.Dialog toDialog = dialogs.get(toIndex);
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++            if (dialogsType == 7 || dialogsType == 8) {
++                MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
++                if (filter != null) {
++                    xie.fa.gram.helpers.dialogs.LocalPinHelper.onMoveFilterDialog(currentAccount, filter, fromDialog.id, toDialog.id);
++                }
++            } else {
++                xie.fa.gram.helpers.dialogs.LocalPinHelper.onMoveDialog(currentAccount, folderId, fromDialog.id, toDialog.id);
++            }
++        } else {
+         if (dialogsType == 7 || dialogsType == 8) {
+             MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+             int idx1 = filter.pinnedDialogs.get(fromDialog.id);
+@@ -1223,6 +1233,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
+             fromDialog.pinnedNum = toDialog.pinnedNum;
+             toDialog.pinnedNum = oldNum;
+         }
++        }
+         Collections.swap(dialogs, fromIndex, toIndex);
+         if (!isCalculatingDiff && fromPosition >= 0 && fromPosition < itemInternals.size() && toPosition >= 0 && toPosition < itemInternals.size()) {
+             itemInternals.add(toPosition, itemInternals.remove(fromPosition));
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
+@@ -3299,9 +3299,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+                         lastMessageDate = dialog.last_message_date;
+                         if (dialogsType == 7 || dialogsType == 8) {
+                             MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+-                            drawPin = filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
++                            drawPin = filter != null && (filter.pinnedDialogs.indexOfKey(dialog.id) >= 0 || (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, filter.id, dialog.id)));
+                         } else {
+-                            drawPin = currentDialogFolderId == 0 && dialog.pinned;
++                            drawPin = currentDialogFolderId == 0 && (dialog.pinned || (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, dialog.folder_id, dialog.id)));
+                         }
+                         if (message != null) {
+                             lastSendState = message.messageOwner.send_state;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+@@ -8888,6 +8888,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+             boolean secretLimitReached = containsFilter && filter != null ? false : newPinnedSecretCount + pinnedSecretCount > maxPinnedCount;
+             boolean dialogsLimitReached = containsFilter && filter != null ? newFilterAlwaysShowCount > 0 && filter.alwaysShow.size() + newFilterAlwaysShowCount > maxPinnedCount : newPinnedCount + pinnedCount - alreadyAdded > maxPinnedCount;
+             hasPinAction[0] = !(secretLimitReached || dialogsLimitReached);
++            if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++                if (isDialogPinned(dialog) || secretLimitReached || dialogsLimitReached) {
++                    hasPinAction[0] = true;
++                }
++            }
+         }
+ 
+         if (hasPinAction[0]) {
+@@ -8917,6 +8922,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+                         return;
+                     }
+                     if (!isDialogPinned(dialog)) {
++                        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && (secretLimitReached || dialogsLimitReached)) {
++                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
++                            builder.setTitle(LocaleController.getString(R.string.InuPinLocallyAlertTitle));
++                            builder.setMessage(LocaleController.getString(R.string.InuPinLocallyAlertText));
++                            builder.setPositiveButton(LocaleController.getString(R.string.InuPinLocally), (di, w) -> {
++                                if (filter != null) {
++                                    xie.fa.gram.helpers.dialogs.LocalPinHelper.pinFilterLocally(currentAccount, filter, dialogId);
++                                } else {
++                                    xie.fa.gram.helpers.dialogs.LocalPinHelper.pinLocally(currentAccount, folderId, dialogId);
++                                }
++                                undoView.showWithAction(0, UndoView.ACTION_PIN_DIALOGS, 1, 1600, null, null);
++                                updateCounters(true);
++                                updateVisibleRows(MessagesController.UPDATE_MASK_REORDER | MessagesController.UPDATE_MASK_CHECK);
++                            });
++                            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
++                            if (folderId == 0 && filter == null) {
++                                builder.setNeutralButton(LocaleController.getString(R.string.ViewLimits), (di, w) -> {
++                                    LimitReachedBottomSheet sheet = new LimitReachedBottomSheet(DialogsActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_PIN_DIALOGS, currentAccount, null);
++                                    showDialog(sheet);
++                                });
++                            }
++                            showDialog(builder.create());
++                            return;
++                        }
+                         pinDialog(dialogId, true, filter, minPinnedNum, true);
+                         undoView.showWithAction(0, UndoView.ACTION_PIN_DIALOGS, 1, 1600, null, null);
+                         if (filter != null) {
+@@ -8931,8 +8960,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+                             }
+                         }
+                     } else {
++                        boolean wasLocal = xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && (filter != null ? xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, filter.id, dialogId) : xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, folderId, dialogId));
+                         pinDialog(dialogId, false, filter, minPinnedNum, true);
+                         undoView.showWithAction(0, UndoView.ACTION_UNPIN_DIALOGS, 1, 1600, null, null);
++                        if (wasLocal) {
++                            updateCounters(true);
++                            updateVisibleRows(MessagesController.UPDATE_MASK_REORDER | MessagesController.UPDATE_MASK_CHECK);
++                            return;
++                        }
+                     }
+                     if (filter != null) {
+                         FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+@@ -9294,6 +9329,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+         if (!movingDialogFilters.isEmpty()) {
+             for (int a = 0, N = movingDialogFilters.size(); a < N; a++) {
+                 MessagesController.DialogFilter filter = movingDialogFilters.get(a);
++                if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && !xie.fa.gram.helpers.dialogs.LocalPinHelper.hasRealFilterOrderChanged(currentAccount, filter)) {
++                    continue;
++                }
+                 FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+             }
+             movingDialogFilters.clear();
+@@ -9346,8 +9384,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+             filter = null;
+         }
+         if (filter != null) {
++            if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, filter.id, dialog.id)) {
++                return true;
++            }
+             return filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
+         }
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, folderId, dialog.id)) {
++            return true;
++        }
+         return dialog.pinned;
+     }
+ 
+@@ -9461,6 +9505,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+             boolean secretLimitReached = containsFilter && filter != null ? false : newPinnedSecretCount + pinnedSecretCount > maxPinnedCount;
+             boolean dialogsLimitReached = containsFilter && filter != null ? newFilterAlwaysShowCount > 0 && filter.alwaysShow.size() + newFilterAlwaysShowCount > maxPinnedCount : newPinnedCount + pinnedCount - alreadyAdded > maxPinnedCount;
+             if (secretLimitReached || dialogsLimitReached) {
++                if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue()) {
++                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
++                    builder.setTitle(LocaleController.getString(R.string.InuPinLocallyAlertTitle));
++                    builder.setMessage(LocaleController.getString(R.string.InuPinLocallyAlertText));
++                    builder.setPositiveButton(LocaleController.getString(R.string.InuPinLocally), (di, w) -> {
++                        for (Long did : selectedDialogs) {
++                            if (filter != null) {
++                                xie.fa.gram.helpers.dialogs.LocalPinHelper.pinFilterLocally(currentAccount, filter, did);
++                            } else {
++                                xie.fa.gram.helpers.dialogs.LocalPinHelper.pinLocally(currentAccount, folderId, did);
++                            }
++                        }
++                        hideActionMode(false);
++                    });
++                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
++                    if (folderId == 0 && filter == null) {
++                        builder.setNeutralButton(LocaleController.getString(R.string.ViewLimits), (di, w) -> {
++                            LimitReachedBottomSheet sheet = new LimitReachedBottomSheet(DialogsActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_PIN_DIALOGS, currentAccount, null);
++                            showDialog(sheet);
++                        });
++                    }
++                    showDialog(builder.create());
++                    return;
++                }
+                 if (folderId != 0 || filter != null) {
+                     AlertsCreator.showSimpleAlert(DialogsActivity.this, LocaleController.formatString("PinFolderLimitReached", R.string.PinFolderLimitReached, LocaleController.formatPluralString("Chats", maxPinnedCount)));
+                 } else {
+@@ -9863,9 +9931,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+         if (filter != null) {
+             int index = filter.pinnedDialogs.get(selectedDialog, Integer.MIN_VALUE);
+             if (!pin && index == Integer.MIN_VALUE) {
++                if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && xie.fa.gram.helpers.dialogs.LocalPinHelper.isFilterLocalPin(currentAccount, filter.id, selectedDialog)) {
++                    xie.fa.gram.helpers.dialogs.LocalPinHelper.unpinFilterLocally(currentAccount, filter, selectedDialog);
++                    return;
++                }
+                 return;
+             }
+-
++        }
++        if (xie.fa.gram.InuConfig.UNLIMITED_PINNED_CHATS.getValue() && filter == null && !pin && xie.fa.gram.helpers.dialogs.LocalPinHelper.isLocalPin(currentAccount, folderId, selectedDialog)) {
++            xie.fa.gram.helpers.dialogs.LocalPinHelper.unpinLocally(currentAccount, folderId, selectedDialog);
++            return;
+         }
+ 
+         debugLastUpdateAction = pin ? 4 : 5;
