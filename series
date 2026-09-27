@@ -331,3 +331,4 @@ feature/clickable-bio-links.patch
 bugfix/update-version-comparison.patch
 feature/members-filter.patch
 feature/unlimited-pinned-chats.patch
+feature/always-show-downloads-button.patch

@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Sun, 27 Sep 2026 10:52:37 +0530
+Subject: Always show downloads button in action bar
+
+---
+ .../src/main/java/org/telegram/ui/DialogsActivity.java        | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+@@ -7622,7 +7622,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+     }
+ 
+     private void showSearch(boolean show, boolean startFromDownloads, boolean animated) {
+-        showSearch(show, startFromDownloads, animated, false);
++        showSearch(show, startFromDownloads, animated, startFromDownloads);
+     }
+ 
+     private void showSearch(boolean show, boolean startFromDownloads, boolean animated, boolean forceNotOnlyDialogs) {
+@@ -10533,7 +10533,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+                 break;
+             }
+         }
+-        if ((getDownloadController().hasUnviewedDownloads() || showDownloads || (downloadsItem.getVisibility() == View.VISIBLE && downloadsItem.getAlpha() == 1 && !force))) {
++        if (xie.fa.gram.InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.getValue() || (getDownloadController().hasUnviewedDownloads() || showDownloads || (downloadsItem.getVisibility() == View.VISIBLE && downloadsItem.getAlpha() == 1 && !force))) {
+             downloadsItemVisible = true;
+         } else {
+             downloadsItemVisible = false;

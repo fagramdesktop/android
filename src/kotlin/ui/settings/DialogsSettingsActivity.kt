@@ -109,6 +109,14 @@ class DialogsSettingsActivity : SettingsPageActivity() {
             )
         )
         items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON,
+                R.string.InuAlwaysShowDownloadsButton,
+                R.string.InuAlwaysShowDownloadsButtonInfo,
+                InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.value
+            )
+        )
+        items.add(
             UItem.asButton(
                 BUTTON_COMMUNITY_DISPLAY_MODE,
                 LocaleController.getString(R.string.InuCommunityDisplayMode),
@@ -273,6 +281,11 @@ class DialogsSettingsActivity : SettingsPageActivity() {
                 }
             }
 
+            TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON -> {
+                val new = InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
             TOGGLE_BOTTOM_TABS_HIDE -> {
                 val new = InuConfig.BOTTOM_TABS_HIDE.toggle()
                 (view as? NotificationsCheckCell)?.isChecked = new
@@ -424,6 +437,7 @@ class DialogsSettingsActivity : SettingsPageActivity() {
         private val TOGGLE_FAB_LEFT_SIDE = InuUtils.generateId()
         private val TOGGLE_INTERACTIVE_CHAT_PREVIEW = InuUtils.generateId()
         private val TOGGLE_UNLIMITED_PINNED_CHATS = InuUtils.generateId()
+        private val TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON = InuUtils.generateId()
         private val TOGGLE_HIDE_ALL_CHATS_TAB = InuUtils.generateId()
         private val BUTTON_COMMUNITY_DISPLAY_MODE = InuUtils.generateId()
         private val BUTTON_TITLE_TEXT = InuUtils.generateId()
@@ -467,6 +481,7 @@ class DialogsSettingsActivity : SettingsPageActivity() {
                 SearchRegistry.Entry("hide-bot-webview-dialogs", R.string.InuHideBotWebView, TOGGLE_BOT_WEBVIEW_BUTTON),
                 SearchRegistry.Entry("disable-chat-preview-expand", R.string.InuDisableChatPreviewExpand, TOGGLE_INTERACTIVE_CHAT_PREVIEW),
                 SearchRegistry.Entry("unlimited-pinned-chats", R.string.InuUnlimitedPinnedChats, TOGGLE_UNLIMITED_PINNED_CHATS),
+                SearchRegistry.Entry("always-show-downloads-button", R.string.InuAlwaysShowDownloadsButton, TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON),
                 SearchRegistry.Entry("community-display-mode", R.string.InuCommunityDisplayMode, BUTTON_COMMUNITY_DISPLAY_MODE),
                 SearchRegistry.Entry("bottom-tabs-hide", R.string.InuBottomTabsHide, TOGGLE_BOTTOM_TABS_HIDE),
                 SearchRegistry.Entry("hide-contacts-tab", R.string.InuHideContactsTab, TOGGLE_HIDE_CONTACTS_TAB),

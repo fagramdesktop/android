@@ -317,6 +317,9 @@ object InuConfig {
     @JvmField
     val UNLIMITED_PINNED_CHATS = BoolItem("unlimited_pinned_chats", false)
 
+    @JvmField
+    val ALWAYS_SHOW_DOWNLOADS_BUTTON = BoolItem("always_show_downloads_button", false)
+
     class PullDownActionItem : IntItem("pull_down_action", REVEAL_ARCHIVE) {
         // Migrate the old `open_archive_on_pull` boolean toggle: on → open archive, off → reveal (stock).
         override fun read(prefs: SharedPreferences): Int {
