@@ -88,7 +88,7 @@ object LocalPinHelper {
             obj.put("local", state.localSet.contains(id))
             arr.put(obj)
         }
-        getPrefs(account).edit().putString(contextKey, arr.toString()).apply()
+        getPrefs(account).edit().putString(contextKey, arr.toString()).commit()
     }
 
     /**
@@ -200,8 +200,26 @@ object LocalPinHelper {
         }
         real0.sortByDescending { it.pinnedNum }
         real1.sortByDescending { it.pinnedNum }
-        reconcile(account, contextKeyForFolder(0), real0.map { it.id })
-        reconcile(account, contextKeyForFolder(1), real1.map { it.id })
+        val controller = MessagesController.getInstance(account)
+        if (controller.inu_isFolderLoaded(0)) {
+            reconcile(account, contextKeyForFolder(0), real0.map { it.id })
+        }
+        if (controller.inu_isFolderLoaded(1)) {
+            reconcile(account, contextKeyForFolder(1), real1.map { it.id })
+        }
+    }
+
+    @JvmStatic
+    fun getAllLocalPinnedDialogIds(account: Int): List<Long> {
+        val result = HashSet<Long>()
+        val prefs = getPrefs(account)
+        for (key in prefs.all.keys) {
+            if (key.startsWith("folder_") || key.startsWith("filter_")) {
+                val state = getState(account, key)
+                result.addAll(state.localSet)
+            }
+        }
+        return ArrayList(result)
     }
 
     @JvmStatic
