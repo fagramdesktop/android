@@ -6,6 +6,7 @@ import xie.fa.gram.SearchRegistry
 import xie.fa.gram.helpers.dialogs.DialogsFabHelper
 import xie.fa.gram.helpers.InuUtils
 import org.telegram.messenger.LocaleController
+import org.telegram.messenger.MessagesController
 import org.telegram.messenger.MessagesStorage
 import org.telegram.messenger.NotificationCenter
 import org.telegram.messenger.R
