@@ -4,9 +4,9 @@ Date: Sun, 27 Sep 2026 10:52:37 +0530
 Subject: Always show downloads button in action bar
 
 ---
- .../java/org/telegram/ui/DialogsActivity.java |  7 +++-
- .../org/telegram/ui/DownloadProgressIcon.java | 41 +++++++++++++++++--
- 2 files changed, 43 insertions(+), 5 deletions(-)
+ .../java/org/telegram/ui/DialogsActivity.java |  7 ++-
+ .../org/telegram/ui/DownloadProgressIcon.java | 48 +++++++++++++++++--
+ 2 files changed, 50 insertions(+), 5 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
 index 0000000..0000000 100644
@@ -37,11 +37,12 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.ja
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/DownloadProgressIcon.java
-@@ -53,7 +53,33 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+@@ -53,7 +53,36 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
  
          downloadImageReceiver.setAutoRepeat(1);
          downloadDrawable.setAutoRepeat(1);
 -        downloadDrawable.start();
++        downloadDrawable.setCurrentFrame(30, false);
 +    }
 +
 +    public void update(boolean showDownloads, boolean hasUnviewedDownloads) {
@@ -54,25 +55,27 @@ index 0000000..0000000 100644
 +            updateProgress();
 +        } else if (hasUnviewedDownloads) {
 +            downloadDrawable.stop();
-+            downloadDrawable.setCurrentFrame(0, false);
++            downloadDrawable.setCurrentFrame(30, false);
 +            showCompletedIcon = true;
 +            progress = 1f;
 +            currentProgress = 1f;
++            downloadCompleteDrawable.stop();
++            downloadCompleteDrawable.setCurrentFrame(Math.max(0, downloadCompleteDrawable.getFramesCount() - 1), false);
 +            invalidate();
 +        } else {
 +            showCompletedIcon = false;
 +            progress = 0;
 +            currentProgress = 0;
 +            downloadDrawable.stop();
-+            downloadDrawable.setCurrentFrame(0, false);
++            downloadDrawable.setCurrentFrame(30, false);
 +            downloadCompleteDrawable.stop();
-+            downloadCompleteDrawable.setCurrentFrame(0, false);
++            downloadCompleteDrawable.setCurrentFrame(Math.max(0, downloadCompleteDrawable.getFramesCount() - 1), false);
 +            invalidate();
 +        }
      }
  
      public void updateColors() {
-@@ -124,6 +150,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+@@ -124,6 +153,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
                  downloadCompleteDrawable.setCurrentFrame(0, false);
                  downloadCompleteDrawable.start();
                  showCompletedIcon = true;
@@ -80,7 +83,7 @@ index 0000000..0000000 100644
              }
          }
          canvas.restore();
-@@ -170,15 +197,23 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+@@ -170,15 +200,27 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
                  currentListeners.add(progressObserver);
              }
          }
@@ -95,17 +98,21 @@ index 0000000..0000000 100644
                  currentProgress = 1f;
                  showCompletedIcon = true;
 +                downloadDrawable.stop();
-+                downloadDrawable.setCurrentFrame(0, false);
++                downloadDrawable.setCurrentFrame(30, false);
++                downloadCompleteDrawable.stop();
++                downloadCompleteDrawable.setCurrentFrame(Math.max(0, downloadCompleteDrawable.getFramesCount() - 1), false);
              } else {
                  progress = 0;
                  currentProgress = 0;
                  showCompletedIcon = false;
 +                downloadDrawable.stop();
-+                downloadDrawable.setCurrentFrame(0, false);
++                downloadDrawable.setCurrentFrame(30, false);
++                downloadCompleteDrawable.stop();
++                downloadCompleteDrawable.setCurrentFrame(Math.max(0, downloadCompleteDrawable.getFramesCount() - 1), false);
              }
          }
      }
-@@ -192,7 +227,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
+@@ -192,7 +234,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
              downloaded += currentListeners.get(i).downloaded;
          }
          if (total == 0) {
