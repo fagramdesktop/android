@@ -445,7 +445,6 @@ const targets: [string, string | Buffer][] = [
   [`${GEN_DEBUG_MIPMAP}/ic_launcher.xml`, debugIcon],
   [`${GEN_DEBUG_MIPMAP}/ic_launcher_round.xml`, debugIcon],
   ['src/res/drawable/inu_splash_320.xml', splashIcon],
-  ['src/res/drawable-xxhdpi/icon_notification_large_inu.png', rasterizeSvg(compositedLauncherSvg, 256, 256)],
 ]
 
 // legacy mipmap densities

@@ -7,8 +7,6 @@ import xie.fa.gram.InuConfig
 import xie.fa.gram.helpers.chat.BlockedMessagesHelper
 import xie.fa.gram.helpers.security.ParanoiaHelper
 import xie.fa.gram.helpers.security.PasscodeHelper
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.MessageObject
 import org.telegram.messenger.R
@@ -17,19 +15,6 @@ import java.util.concurrent.ConcurrentHashMap
 object NotificationsHelper {
     private val prefs by lazy {
         ApplicationLoader.applicationContext.getSharedPreferences("inugram_notifications", Context.MODE_PRIVATE)
-    }
-
-    private var cachedLargeIcon: Bitmap? = null
-
-    @JvmStatic
-    fun largeIcon(): Bitmap? {
-        if (InuConfig.NOTIFICATION_ICON.value == InuConfig.NotificationIconItem.TELEGRAM) return null
-        cachedLargeIcon?.takeUnless { it.isRecycled }?.let { return it }
-        val context = ApplicationLoader.applicationContext ?: return null
-        val options = BitmapFactory.Options().apply { inScaled = false }
-        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.icon_notification_large_inu, options)
-        cachedLargeIcon = bitmap
-        return bitmap
     }
 
     @JvmStatic
