@@ -1,17 +1,29 @@
 package xie.fa.gram.ui.settings
 
+import android.text.InputType
 import android.view.View
-import xie.fa.gram.InuConfig
-import xie.fa.gram.SearchRegistry
-import xie.fa.gram.helpers.InuUtils
+import android.widget.EditText
+import android.widget.LinearLayout
+import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.R
+import org.telegram.ui.ActionBar.AlertDialog
+import org.telegram.ui.ActionBar.Theme
 import org.telegram.ui.Cells.NotificationsCheckCell
 import org.telegram.ui.Cells.TextCheckCell
 import org.telegram.ui.Components.UItem
 import org.telegram.ui.Components.UniversalAdapter
+import xie.fa.gram.InuConfig
+import xie.fa.gram.SearchRegistry
+import xie.fa.gram.helpers.InuUtils
+import xie.fa.gram.helpers.lastfm.LastFmBioSyncHelper
+import xie.fa.gram.helpers.lastfm.LastFmStorage
 
-class UserProfileSettingsActivity : SettingsPageActivity() {
+class UserProfileSettingsActivity() : SettingsPageActivity() {
+
+    constructor(account: Int) : this() {
+        setCurrentAccount(account)
+    }
 
     override fun getTitle(): CharSequence = LocaleController.getString(R.string.InuUserProfile)
 
@@ -87,13 +99,44 @@ class UserProfileSettingsActivity : SettingsPageActivity() {
                 LocaleController.getString(R.string.InuDisableChatTitlePhone)
             ).setChecked(InuConfig.DISABLE_CHAT_TITLE_PHONE.value)
         )
+        items.add(UItem.asShadow(null))
+
+        items.add(UItem.asHeader(HEADER_LASTFM, LocaleController.getString(R.string.InuLastFm)))
+        val currentUsername = LastFmStorage.getUsername(currentAccount)
         items.add(
             UItem.asButton(
-                BUTTON_LASTFM,
-                R.drawable.files_music,
-                LocaleController.getString(R.string.InuLastFm)
+                BUTTON_LASTFM_USERNAME,
+                LocaleController.getString(R.string.InuLastFmUsername),
+                if (currentUsername.isNotEmpty()) currentUsername else LocaleController.getString(R.string.None)
             )
         )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_LASTFM_SHOW_ON_PROFILE,
+                R.string.InuLastFmShowOnProfile,
+                R.string.InuLastFmShowOnProfileInfo,
+                LastFmStorage.isShowOnProfile(currentAccount)
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_LASTFM_USE_OWN_KEY,
+                R.string.InuLastFmUseOwnApiKey,
+                R.string.InuLastFmUseOwnApiKeyInfo,
+                LastFmStorage.isUseOwnApiKey(currentAccount)
+            )
+        )
+        if (LastFmStorage.isUseOwnApiKey(currentAccount)) {
+            val key = LastFmStorage.getPersonalApiKey(currentAccount)
+            items.add(
+                UItem.asButton(
+                    BUTTON_LASTFM_PERSONAL_KEY,
+                    LocaleController.getString(R.string.InuLastFmPersonalApiKey),
+                    if (key.isNotEmpty()) "••••••••" else LocaleController.getString(R.string.None)
+                )
+            )
+        }
+        items.add(UItem.asShadow(null))
     }
 
     override fun onClick(item: UItem, view: View, position: Int, x: Float, y: Float) {
@@ -150,8 +193,87 @@ class UserProfileSettingsActivity : SettingsPageActivity() {
                 (view as? TextCheckCell)?.isChecked = new
             }
 
-            BUTTON_LASTFM -> presentFragment(LastFmSettingsActivity(currentAccount))
+            BUTTON_LASTFM_USERNAME -> showUsernameDialog()
+
+            TOGGLE_LASTFM_SHOW_ON_PROFILE -> {
+                val new = !LastFmStorage.isShowOnProfile(currentAccount)
+                LastFmStorage.setShowOnProfile(currentAccount, new)
+                (view as? NotificationsCheckCell)?.isChecked = new
+                (view as? TextCheckCell)?.isChecked = new
+                LastFmBioSyncHelper.onShowOnProfileToggled(currentAccount)
+            }
+
+            TOGGLE_LASTFM_USE_OWN_KEY -> {
+                val new = !LastFmStorage.isUseOwnApiKey(currentAccount)
+                LastFmStorage.setUseOwnApiKey(currentAccount, new)
+                listView.adapter.update(true)
+            }
+
+            BUTTON_LASTFM_PERSONAL_KEY -> showPersonalKeyDialog()
         }
+    }
+
+    private fun showUsernameDialog() {
+        val ctx = context ?: return
+        val container = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(AndroidUtilities.dp(24f), AndroidUtilities.dp(8f), AndroidUtilities.dp(24f), 0)
+        }
+
+        val input = EditText(ctx).apply {
+            setTextColor(Theme.getColor(Theme.key_dialogTextBlack))
+            setHintTextColor(Theme.getColor(Theme.key_dialogTextHint))
+            hint = LocaleController.getString(R.string.InuLastFmUsername)
+            setText(LastFmStorage.getUsername(currentAccount))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            isSingleLine = true
+            textSize = 16f
+        }
+        container.addView(input, LinearLayout.LayoutParams(-1, -2))
+
+        AlertDialog.Builder(ctx)
+            .setTitle(LocaleController.getString(R.string.InuLastFmUsername))
+            .setView(container)
+            .setPositiveButton(LocaleController.getString(R.string.OK)) { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName != LastFmStorage.getUsername(currentAccount)) {
+                    LastFmStorage.setUsername(currentAccount, newName)
+                    LastFmBioSyncHelper.onUsernameChanged(currentAccount)
+                    listView.adapter.update(true)
+                }
+            }
+            .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+            .show()
+    }
+
+    private fun showPersonalKeyDialog() {
+        val ctx = context ?: return
+        val container = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(AndroidUtilities.dp(24f), AndroidUtilities.dp(8f), AndroidUtilities.dp(24f), 0)
+        }
+
+        val input = EditText(ctx).apply {
+            setTextColor(Theme.getColor(Theme.key_dialogTextBlack))
+            setHintTextColor(Theme.getColor(Theme.key_dialogTextHint))
+            hint = LocaleController.getString(R.string.InuLastFmPersonalApiKey)
+            setText(LastFmStorage.getPersonalApiKey(currentAccount))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            isSingleLine = true
+            textSize = 16f
+        }
+        container.addView(input, LinearLayout.LayoutParams(-1, -2))
+
+        AlertDialog.Builder(ctx)
+            .setTitle(LocaleController.getString(R.string.InuLastFmPersonalApiKey))
+            .setView(container)
+            .setPositiveButton(LocaleController.getString(R.string.OK)) { _, _ ->
+                val newKey = input.text.toString().trim()
+                LastFmStorage.setPersonalApiKey(currentAccount, newKey)
+                listView.adapter.update(true)
+            }
+            .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+            .show()
     }
 
     companion object {
@@ -164,7 +286,12 @@ class UserProfileSettingsActivity : SettingsPageActivity() {
         private val TOGGLE_SHOW_PROFILE_GIFT_BUTTON = InuUtils.generateId()
         private val BUTTON_PROFILE_ID_MODE = InuUtils.generateId()
         private val TOGGLE_DISABLE_CHAT_TITLE_PHONE = InuUtils.generateId()
-        private val BUTTON_LASTFM = InuUtils.generateId()
+
+        private val HEADER_LASTFM = InuUtils.generateId()
+        private val BUTTON_LASTFM_USERNAME = InuUtils.generateId()
+        private val TOGGLE_LASTFM_SHOW_ON_PROFILE = InuUtils.generateId()
+        private val TOGGLE_LASTFM_USE_OWN_KEY = InuUtils.generateId()
+        private val BUTTON_LASTFM_PERSONAL_KEY = InuUtils.generateId()
 
         @JvmField val PAGE = SearchRegistry.Page(
             slug = "user-profile",
@@ -181,6 +308,11 @@ class UserProfileSettingsActivity : SettingsPageActivity() {
                 SearchRegistry.Entry("show-profile-gift-button", R.string.InuShowProfileGiftButton, TOGGLE_SHOW_PROFILE_GIFT_BUTTON),
                 SearchRegistry.Entry("profile-id-mode", R.string.InuProfileIdMode, BUTTON_PROFILE_ID_MODE),
                 SearchRegistry.Entry("disable-chat-title-phone", R.string.InuDisableChatTitlePhone, TOGGLE_DISABLE_CHAT_TITLE_PHONE),
+                SearchRegistry.Entry("lastfm", R.string.InuLastFm, HEADER_LASTFM),
+                SearchRegistry.Entry("lastfm-username", R.string.InuLastFmUsername, BUTTON_LASTFM_USERNAME),
+                SearchRegistry.Entry("lastfm-show-on-profile", R.string.InuLastFmShowOnProfile, TOGGLE_LASTFM_SHOW_ON_PROFILE),
+                SearchRegistry.Entry("lastfm-use-own-key", R.string.InuLastFmUseOwnApiKey, TOGGLE_LASTFM_USE_OWN_KEY),
+                SearchRegistry.Entry("lastfm-personal-key", R.string.InuLastFmPersonalApiKey, BUTTON_LASTFM_PERSONAL_KEY),
             ),
         )
     }

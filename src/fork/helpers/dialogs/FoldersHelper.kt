@@ -4,7 +4,7 @@ import org.telegram.messenger.AndroidUtilities
 import org.telegram.ui.ActionBar.Theme
 import org.telegram.ui.Components.FilterTabsView
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableViewFactory
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl
 import xie.fa.gram.InuConfig
 import xie.fa.gram.helpers.dialogs.MainTabsHelper
