@@ -5,13 +5,14 @@ Subject: Long-tap forward in message menu to forward without sender or caption
 
 ---
  .../src/main/java/org/telegram/ui/ChatActivity.java        | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ .../src/main/java/org/telegram/ui/DialogsActivity.java     | 4 ++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
-@@ -15279,6 +15279,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -15468,6 +15468,7 @@ public class ChatActivity extends BaseFragment implements
                      messagePreviewParams.attach(forwardingPreviewView);
                  }
                  messagePreviewParams.updateForward(messageObjectsToForward, dialog_id);
@@ -19,7 +20,7 @@ index 0000000..0000000 100644
                  if (messagePreviewParams.isEmpty() && editingMessageObject == null) {
                      messagePreviewParams = null;
                  }
-@@ -31254,7 +31255,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -31552,7 +31553,7 @@ public class ChatActivity extends BaseFragment implements
              final boolean showSponsorInfo = !suggestEdit && !isEphemeral && selectedObject != null && selectedObject.isSponsored() && (selectedObject.sponsoredInfo != null || selectedObject.sponsoredAdditionalInfo != null || selectedObject.sponsoredUrl != null && !selectedObject.sponsoredUrl.startsWith("https://" + getMessagesController().linkPrefix));
              final boolean isReactionsAvailableFinal = !suggestEdit && isReactionsAvailable;
  
@@ -28,7 +29,7 @@ index 0000000..0000000 100644
              if (isReactionsViewAvailable || showMessageSeen || showSponsorInfo) {
                  flags |= ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK;
              }
-@@ -33468,6 +33469,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -33766,6 +33767,7 @@ public class ChatActivity extends BaseFragment implements
                  break;
              }
              case OPTION_FORWARD: {
@@ -36,7 +37,7 @@ index 0000000..0000000 100644
                  if (getMessagesController().isFrozen()) {
                      AccountFrozenAlert.show(currentAccount);
                      selectedObject = null;
-@@ -34566,8 +34568,9 @@ public class ChatActivity extends BaseFragment implements
+@@ -34880,8 +34882,9 @@ public class ChatActivity extends BaseFragment implements
                          params.suggestionParams = messageSuggestionParams;
                          getSendMessagesHelper().sendMessage(params);
                      }
@@ -47,3 +48,18 @@ index 0000000..0000000 100644
                  fragment.finishFragment();
                  createUndoView();
                  if (undoView != null) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
+@@ -12131,6 +12131,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+         final boolean multipleMedia = sharedMediaEntries != null && sharedMediaEntries.size() > 1;
+ 
+         ItemOptions.makeOptions(this, view)
++            .addIf(!isQuote && delegate instanceof ChatActivity, R.drawable.msg_forward_noquote, LocaleController.getString(R.string.InuForwardNoQuote), () -> {
++                xie.fa.gram.helpers.chat.ChatHelper.pendingHideAuthor = true;
++                view.callOnClick();
++            })
+             .addIf(canSendDocs, R.drawable.msg_sendfile, LocaleController.getString(multipleMedia ? R.string.SendAsFiles : R.string.SendAsFile), () -> {
+                 this.forceDocument = true;
+                 if (delegate == null || selectedDialogs.isEmpty()) {

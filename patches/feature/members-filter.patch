@@ -12,7 +12,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaL
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java
-@@ -3217,15 +3217,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+@@ -3228,15 +3228,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                      if (view instanceof UserCell) {
                          TLRPC.ChatParticipant participant;
                          final int i;
@@ -34,7 +34,7 @@ index 0000000..0000000 100644
                          onMemberClick(participant, false, view);
                      } else if (mediaPage.listView.getAdapter() == groupUsersSearchAdapter) {
                          long user_id;
-@@ -3567,13 +3570,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+@@ -3578,13 +3581,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                      if (mediaPage.selectedType == TAB_GROUPUSERS && view instanceof UserCell) {
                          final TLRPC.ChatParticipant participant;
                          int index = position;
@@ -50,7 +50,7 @@ index 0000000..0000000 100644
                              return false;
                          }
                          participant = chatUsersAdapter.chatInfo.participants.participants.get(index);
-@@ -11069,10 +11072,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+@@ -11091,10 +11094,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
  
          @Override
          public int getItemCount() {
@@ -72,7 +72,7 @@ index 0000000..0000000 100644
          }
  
          public void updateRank(long userId, String rank) {
-@@ -11103,9 +11115,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+@@ -11125,9 +11137,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
              }
              UserCell userCell = (UserCell) holder.itemView;
              TLRPC.ChatParticipant part;
@@ -94,7 +94,7 @@ index 0000000..0000000 100644
                  part = chatInfo.participants.participants.get(position);
              }
              if (part != null) {
-@@ -11153,15 +11175,20 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+@@ -11175,15 +11197,20 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                  userCell.setAdminRole(role, isAdmin, isOwner, showAddTag, v -> {
                      TagEditCell.showInfoSheet(getContext(), profileActivity.getCurrentAccount(), dialog_id, user, finalRole, isAdmin, isOwner, canEditAdmin, resourcesProvider);
                  });
@@ -121,7 +121,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java b/
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
-@@ -343,6 +343,7 @@ import java.util.concurrent.atomic.AtomicReference;
+@@ -347,6 +347,7 @@ import java.util.concurrent.atomic.AtomicReference;
  import java.util.zip.ZipEntry;
  import java.util.zip.ZipOutputStream;
  
@@ -129,7 +129,7 @@ index 0000000..0000000 100644
  import xie.fa.gram.helpers.dialogs.MainTabsHelper;
  import xie.fa.gram.helpers.profile.ProfileHelper;
  import me.vkryl.android.animator.BoolAnimator;
-@@ -464,7 +465,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -469,7 +470,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private int actionBarBackgroundColor;
      private TopView topView;
      private long userId;
@@ -138,16 +138,16 @@ index 0000000..0000000 100644
      private long topicId;
      public boolean saved;
      private long dialogId;
-@@ -490,7 +491,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -495,7 +496,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private boolean canSearchMembers;
  
      private boolean loadingUsers;
 -    private LongSparseArray<TLRPC.ChatParticipant> participantsMap = new LongSparseArray<>();
 +    public LongSparseArray<TLRPC.ChatParticipant> participantsMap = new LongSparseArray<>();
      private boolean usersEndReached;
+     private boolean inu_loadingSelfParticipant;
  
-     private long banFromGroup;
-@@ -543,7 +544,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -549,7 +550,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private BotLocation botLocation;
      private BotBiometry botBiometry;
  
@@ -156,7 +156,7 @@ index 0000000..0000000 100644
      private TLRPC.UserFull userInfo;
  
      public ProfileChannelCell.ChannelMessageFetcher profileChannelMessageFetcher;
-@@ -554,10 +555,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -560,10 +561,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
  
      private long selectedUser;
      private int onlineCount = -1;
@@ -169,7 +169,7 @@ index 0000000..0000000 100644
      private TL_bots.BotInfo botInfo;
      private TLRPC.ChannelParticipant currentChannelParticipant;
      private TL_account.TL_password currentPassword;
-@@ -711,6 +712,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -718,6 +719,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private int membersHeaderRow;
      private int membersStartRow;
      private int membersEndRow;
@@ -178,7 +178,7 @@ index 0000000..0000000 100644
      private int addMemberRow;
      private int subscribersRow;
      private int subscribersRequestsRow;
-@@ -2370,6 +2373,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -2390,6 +2393,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      @Override
      public void onFragmentDestroy() {
          super.onFragmentDestroy();
@@ -186,8 +186,8 @@ index 0000000..0000000 100644
          if (sharedMediaLayout != null) {
              sharedMediaLayout.onDestroy();
          }
-@@ -4522,6 +4526,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
-                     participant = chatInfo.participants.participants.get(position - membersStartRow);
+@@ -4562,6 +4566,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+                     participant = visibleChatParticipants.get(position - membersStartRow);
                  }
                  onMemberClick(participant, false, view);
 +            } else if (position == inu_membersFilterRow) {
@@ -199,7 +199,7 @@ index 0000000..0000000 100644
              } else if (position == addMemberRow) {
                  openAddMember();
              } else if (position == usernameRow) {
-@@ -7734,16 +7744,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -7783,16 +7793,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
          }));
      }
  
@@ -222,7 +222,7 @@ index 0000000..0000000 100644
          req.offset = reload ? 0 : participantsMap.size();
          req.limit = 200;
          int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> getNotificationCenter().doOnIdle(() -> {
-@@ -7757,8 +7770,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -7806,8 +7819,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  if (req.offset == 0) {
                      participantsMap.clear();
                      chatInfo.participants = new TLRPC.TL_chatParticipants();
@@ -235,7 +235,7 @@ index 0000000..0000000 100644
                  }
                  for (int a = 0; a < res.participants.size(); a++) {
                      TLRPC.TL_chatChannelParticipant participant = new TLRPC.TL_chatChannelParticipant();
-@@ -10365,42 +10380,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -10470,42 +10485,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
          return AndroidUtilities.calcBitmapColor(avatarImage.getImageReceiver().getBitmap());
      }
  
@@ -282,7 +282,7 @@ index 0000000..0000000 100644
                  sharedMediaLayout.setChatUsers(sortedUsers, chatInfo);
              }
          } else if (chatInfo instanceof TLRPC.TL_channelFull && chatInfo.participants_count > 200) {
-@@ -10647,6 +10637,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -10752,6 +10742,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
          membersHeaderRow = -1;
          membersStartRow = -1;
          membersEndRow = -1;
@@ -290,7 +290,7 @@ index 0000000..0000000 100644
          addMemberRow = -1;
          subscribersRow = -1;
          subscribersRequestsRow = -1;
-@@ -11075,13 +11066,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11182,13 +11173,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              }
  
              if (ChatObject.isChannel(currentChat)) {
@@ -310,7 +310,7 @@ index 0000000..0000000 100644
                              membersHeaderRow = rowCount++;
                          }
                          membersStartRow = rowCount;
-@@ -11097,11 +11091,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11204,11 +11198,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                              sharedMediaLayout.setChatUsers(null, null);
                          }
                      } else {
@@ -324,7 +324,7 @@ index 0000000..0000000 100644
                                  usersForceShowingIn = 2;
                              }
                              sharedMediaLayout.setChatUsers(sortedUsers, chatInfo);
-@@ -11130,16 +11124,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11237,16 +11231,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  }
              } else if (chatInfo != null) {
                  if (!isTopic && chatInfo.participants != null && chatInfo.participants.participants != null && !(chatInfo.participants instanceof TLRPC.TL_chatParticipantsForbidden)) {
@@ -347,7 +347,7 @@ index 0000000..0000000 100644
                          membersEndRow = rowCount;
                          membersSectionRow = rowCount++;
                          visibleChatParticipants.addAll(chatInfo.participants.participants);
-@@ -11150,7 +11147,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11257,7 +11254,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                              sharedMediaLayout.setChatUsers(null, null);
                          }
                      } else {
@@ -356,7 +356,7 @@ index 0000000..0000000 100644
                              membersSectionRow = rowCount++;
                          }
                          if (sharedMediaLayout != null) {
-@@ -13969,6 +13966,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -14085,6 +14082,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                          } else {
                              textCell.setTextAndIcon(LocaleController.getString(R.string.ChannelBlacklist), R.drawable.msg_user_remove, position != membersSectionRow - 1);
                          }
@@ -371,7 +371,7 @@ index 0000000..0000000 100644
                      } else if (position == addMemberRow) {
                          textCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                          boolean isNextPositionMember = position + 1 >= membersStartRow && position + 1 < membersEndRow;
-@@ -14498,7 +14503,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -14614,7 +14619,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  return VIEW_TYPE_ABOUT_LINK;
              } else if (position == settingsTimerRow || position == settingsKeyRow || position == reportRow || position == reportReactionRow || position == deleteReactionRow ||
                      position == subscribersRow || position == subscribersRequestsRow || position == administratorsRow || position == settingsRow || position == blockedUsersRow ||
@@ -380,7 +380,7 @@ index 0000000..0000000 100644
                      position == sendMessageRow || position == notificationRow || position == privacyRow ||
                      position == languageRow || position == dataRow || position == chatRow ||
                      position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
-@@ -15834,16 +15839,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -15950,16 +15955,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  if (oldItemPosition >= oldMembersStartRow && oldItemPosition < oldMembersEndRow) {
                      TLRPC.ChatParticipant oldItem;
                      TLRPC.ChatParticipant newItem;
@@ -412,7 +412,7 @@ index 0000000..0000000 100644
                      }
                      return oldItem.user_id == newItem.user_id;
                  }
-@@ -15929,6 +15943,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -16045,6 +16059,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              put(++pointer, settingsKeyRow, sparseIntArray);
              put(++pointer, secretSettingsSectionRow, sparseIntArray);
              put(++pointer, membersHeaderRow, sparseIntArray);

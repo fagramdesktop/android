@@ -5,8 +5,8 @@ Subject: md3-style actions in profile
 
 ---
  .../ui/Components/ProfileActionsView.java     | 82 +++++++++++++------
- .../java/org/telegram/ui/ProfileActivity.java | 22 +++--
- 2 files changed, 68 insertions(+), 36 deletions(-)
+ .../java/org/telegram/ui/ProfileActivity.java | 24 ++++--
+ 2 files changed, 70 insertions(+), 36 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/ProfileActionsView.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/ProfileActionsView.java
 index 0000000..0000000 100644
@@ -229,16 +229,25 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java b/
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
-@@ -390,6 +390,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -394,6 +394,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private FrameLayout avatarContainer;
      private FrameLayout avatarContainer2;
      private ProfileActionsView actionsView;
-+    private final boolean inu_materialProfileActions = ProfileHelper.useMaterialProfileActions();
-+    private final int inu_profileActionsHeight = inu_materialProfileActions ? 94 : 74;
++    private boolean inu_materialProfileActions = ProfileHelper.useMaterialProfileActions();
++    private int inu_profileActionsHeight = inu_materialProfileActions ? 94 : 74;
      private MessagesController.SavedMusicList savedMusicList;
      private ProfileMusicView musicView;
-     private AnimatedStatusView animatedStatusView;
-@@ -3901,7 +3903,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+     private ProfileBalanceView balanceView;
+@@ -2557,6 +2559,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+ 
+     @Override
+     public View createView(Context context) {
++        inu_materialProfileActions = ProfileHelper.useMaterialProfileActions();
++        inu_profileActionsHeight = inu_materialProfileActions ? 94 : 74;
+         Theme.createProfileResources(context);
+         Theme.createChatResources(context, false);
+         BaseFragment lastFragment = parentLayout.getLastFragment();
+@@ -3931,7 +3935,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  }
              });
  
@@ -247,7 +256,7 @@ index 0000000..0000000 100644
              setActionsMode();
              updateNotifications(false);
  
-@@ -5530,7 +5532,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -5560,7 +5564,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              avatarsViewPager.setChatInfo(chatInfo);
          }
          avatarContainer2.addView(avatarsViewPager);
@@ -256,16 +265,16 @@ index 0000000..0000000 100644
          avatarContainer2.addView(overlaysView);
          if (actionsView != null) {
              avatarsBlurView.setActionsView(actionsView);
-@@ -6095,7 +6097,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
-     private int getActionsExtraHeight(boolean withMusic) {
+@@ -6126,7 +6130,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+     private int getActionsExtraHeight(boolean withPills) {
          if (userId != 0 && imageUpdater != null && !myProfile)
              return 0;
--        return dp(74 + (withMusic && hasMusic ? 25 : 0));
-+        return dp(inu_profileActionsHeight + (withMusic && hasMusic ? 25 : 0));
+-        return dp(74 + (withPills && (hasMusic || hasBalance) ? 25 : 0));
++        return dp(inu_profileActionsHeight + (withPills && (hasMusic || hasBalance) ? 25 : 0));
      }
  
      private int getHeaderExtraHeight() {
-@@ -11315,17 +11317,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11371,17 +11375,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              return;
          }
          final int newTop = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
@@ -277,17 +286,17 @@ index 0000000..0000000 100644
              actionsView.clipHeight = avatarContainer.getY() + vh;
              actionsView.setAlpha(avatarAnimationProgress);
 -            actionsView.updatePosition(listView.getMeasuredWidth(), dp(74));
-+            actionsView.updatePosition(listView.getMeasuredWidth() + dp(inu_materialProfileActions && hasMusic ? 25 : 0), actionsHeight);
++            actionsView.updatePosition(listView.getMeasuredWidth() + dp(inu_materialProfileActions && (hasMusic || hasBalance) ? 25 : 0), actionsHeight);
          } else {
              actionsView.clipHeight = -1;
--            float bottom = extraHeight + newTop - dp(hasMusic ? 25 : 0);
+-            float bottom = extraHeight + newTop - dp(hasMusic || hasBalance ? 25 : 0);
 -            float height = Math.min(dp(74), bottom - newTop);
-+            float bottom = extraHeight + newTop - dp(!inu_materialProfileActions && hasMusic ? 25 : 0);
++            float bottom = extraHeight + newTop - dp(!inu_materialProfileActions && (hasMusic || hasBalance) ? 25 : 0);
 +            float height = Math.min(actionsHeight, bottom - newTop);
              actionsView.updatePosition(bottom - height + ProfileHelper.expandedActionsOffset(playProfileAnimation, avatarAnimationProgress, currentExpandAnimatorValue, openAnimationInProgress), height);
          }
  
-@@ -11345,22 +11348,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -11401,22 +11406,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              return;
          }
          final int newTop = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);

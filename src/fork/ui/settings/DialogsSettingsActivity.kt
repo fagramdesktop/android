@@ -1,0 +1,440 @@
+package xie.fa.gram.ui.settings
+
+import android.view.View
+import xie.fa.gram.InuConfig
+import xie.fa.gram.SearchRegistry
+import xie.fa.gram.helpers.dialogs.DialogsFabHelper
+import xie.fa.gram.helpers.InuUtils
+import org.telegram.messenger.LocaleController
+import org.telegram.messenger.MessagesController
+import org.telegram.messenger.MessagesStorage
+import org.telegram.messenger.NotificationCenter
+import org.telegram.messenger.R
+import org.telegram.messenger.UserConfig
+import org.telegram.ui.Cells.NotificationsCheckCell
+import org.telegram.ui.Cells.TextCheckCell
+import org.telegram.ui.Components.UItem
+import org.telegram.ui.Components.UniversalAdapter
+
+class DialogsSettingsActivity : SettingsPageActivity() {
+
+    override fun getTitle(): CharSequence = LocaleController.getString(R.string.InuMainPage)
+
+    override fun fillItems(items: ArrayList<UItem>, adapter: UniversalAdapter) {
+        // folders section
+        items.add(UItem.asHeader(LocaleController.getString(R.string.InuFolders)))
+        items.add(
+            UItem.asButton(
+                BUTTON_FOLDERS_DISPLAY_MODE,
+                LocaleController.getString(R.string.InuFoldersDisplayMode),
+                when (InuConfig.FOLDERS_DISPLAY_MODE.value) {
+                    InuConfig.FoldersDisplayModeItem.TITLES_AND_ICONS -> LocaleController.getString(R.string.InuFoldersDisplayModeTitlesAndIcons)
+                    InuConfig.FoldersDisplayModeItem.ICONS_ONLY -> LocaleController.getString(R.string.InuFoldersDisplayModeIconsOnly)
+                    else -> LocaleController.getString(R.string.InuFoldersDisplayModeTitles)
+                }
+            )
+        )
+        items.add(
+            UItem.asButton(
+                BUTTON_FOLDERS_UNREAD_COUNTER_MODE,
+                LocaleController.getString(R.string.InuFoldersUnreadCounter),
+                when (InuConfig.FOLDERS_UNREAD_COUNTER_MODE.value) {
+                    InuConfig.FoldersUnreadCounterModeItem.HIDE -> LocaleController.getString(R.string.InuFoldersUnreadCounterHide)
+                    InuConfig.FoldersUnreadCounterModeItem.EXCLUDE_MUTED -> LocaleController.getString(R.string.InuFoldersUnreadCounterExcludeMuted)
+                    InuConfig.FoldersUnreadCounterModeItem.EXCLUDE_MUTED_NON_DMS -> LocaleController.getString(R.string.InuFoldersUnreadCounterExcludeMutedNonDms)
+                    else -> LocaleController.getString(R.string.InuFoldersUnreadCounterRegular)
+                }
+            )
+        )
+        items.add(
+            UItem.asCheck(
+                TOGGLE_HIDE_ALL_CHATS_TAB,
+                LocaleController.getString(R.string.InuHideAllChatsTab),
+            ).setChecked(InuConfig.HIDE_ALL_CHATS_TAB.value)
+        )
+        items.add(UItem.asShadow(null))
+        // end folders section
+
+        // chat list section
+        items.add(UItem.asHeader(LocaleController.getString(R.string.InuChatList)))
+        items.add(
+            UItem.asButton(
+                BUTTON_TITLE_TEXT,
+                LocaleController.getString(R.string.InuTitleText),
+                titleTextLabel(InuConfig.DIALOGS_TITLE_TEXT.value),
+            )
+        )
+        items.add(
+            UItem.asCheck(
+                TOGGLE_OLD_MENTION_INDICATOR,
+                LocaleController.getString(R.string.InuOldMentionIndicator),
+            ).setChecked(InuConfig.OLD_MENTION_INDICATOR.value)
+        )
+        items.add(
+            UItem.asButton(
+                BUTTON_PULL_DOWN_ACTION,
+                LocaleController.getString(R.string.InuPullDownAction),
+                pullDownActionLabel(InuConfig.PULL_DOWN_ACTION.value),
+            )
+        )
+        items.add(
+            UItem.asCheck(
+                TOGGLE_DISABLE_SWIPE_TO_UNARCHIVE,
+                LocaleController.getString(R.string.InuDisableSwipeToUnarchive),
+            ).setChecked(InuConfig.DISABLE_SWIPE_TO_UNARCHIVE.value)
+        )
+        items.add(
+            UItem.asCheck(
+                TOGGLE_DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC,
+                LocaleController.getString(R.string.InuDisableSwipeToHideGeneralTopic),
+            ).setChecked(InuConfig.DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC.value)
+        )
+        items.add(
+            UItem.asCheck(TOGGLE_BOT_WEBVIEW_BUTTON, LocaleController.getString(R.string.InuHideBotWebView))
+                .setChecked(InuConfig.HIDE_BOT_WEBVIEW_DIALOGS.value)
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_INTERACTIVE_CHAT_PREVIEW,
+                R.string.InuDisableChatPreviewExpand,
+                R.string.InuDisableChatPreviewExpandInfo,
+                InuConfig.INTERACTIVE_CHAT_PREVIEW.value
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_UNLIMITED_PINNED_CHATS,
+                R.string.InuUnlimitedPinnedChats,
+                R.string.InuUnlimitedPinnedChatsInfo,
+                InuConfig.UNLIMITED_PINNED_CHATS.value
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON,
+                R.string.InuAlwaysShowDownloadsButton,
+                R.string.InuAlwaysShowDownloadsButtonInfo,
+                InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.value
+            )
+        )
+        items.add(
+            UItem.asButton(
+                BUTTON_COMMUNITY_DISPLAY_MODE,
+                LocaleController.getString(R.string.InuCommunityDisplayMode),
+                communityDisplayModeLabel(InuConfig.COMMUNITY_DISPLAY_MODE.value),
+            )
+        )
+        items.add(UItem.asShadow(null))
+        // end chat list section
+
+        // fab section
+        items.add(UItem.asHeader(LocaleController.getString(R.string.InuDialogsFab)))
+        val mainAction = DialogsFabHelper.Action.fromValue(InuConfig.DIALOGS_FAB_MAIN_ACTION.value)
+        items.add(
+            UItem.asButton(
+                BUTTON_FAB_MAIN_ACTION,
+                LocaleController.getString(R.string.InuDialogsFabMainAction),
+                mainAction.label(),
+            )
+        )
+        if (mainAction != DialogsFabHelper.Action.NONE) {
+            items.add(
+                UItem.asButton(
+                    BUTTON_FAB_SECONDARY_ACTION,
+                    LocaleController.getString(R.string.InuDialogsFabSecondaryAction),
+                    DialogsFabHelper.Action.fromValue(InuConfig.DIALOGS_FAB_SECONDARY_ACTION.value).label(),
+                )
+            )
+        }
+        items.add(
+            UItem.asCheck(
+                TOGGLE_FAB_HIDE_ON_SCROLL,
+                LocaleController.getString(R.string.InuDialogsFabHideOnScroll),
+            ).setChecked(InuConfig.DIALOGS_FAB_HIDE_ON_SCROLL.value)
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_FAB_OFFSET_FOR_BOTTOM_BAR,
+                R.string.InuDialogsFabOffsetForBottomBar,
+                R.string.InuDialogsFabOffsetForBottomBarInfo,
+                InuConfig.DIALOGS_FAB_OFFSET_FOR_BOTTOM_BAR.value
+            )
+        )
+        items.add(
+            UItem.asCheck(
+                TOGGLE_FAB_LEFT_SIDE,
+                LocaleController.getString(R.string.InuDialogsFabLeftSide),
+            ).setChecked(InuConfig.DIALOGS_FAB_LEFT_SIDE.value)
+        )
+        items.add(UItem.asShadow(null))
+        // end fab section
+    }
+
+    override fun onClick(item: UItem, view: View, position: Int, x: Float, y: Float) {
+        when (item.id) {
+            BUTTON_FOLDERS_DISPLAY_MODE -> RadioItemOptions.show(
+                this, view,
+                listOf(
+                    LocaleController.getString(R.string.InuFoldersDisplayModeTitles),
+                    LocaleController.getString(R.string.InuFoldersDisplayModeTitlesAndIcons),
+                    LocaleController.getString(R.string.InuFoldersDisplayModeIconsOnly),
+                ),
+                InuConfig.FOLDERS_DISPLAY_MODE.value - 1,
+            ) { which ->
+                InuConfig.FOLDERS_DISPLAY_MODE.value = which + 1
+                softRebuild()
+            }
+
+            BUTTON_FOLDERS_UNREAD_COUNTER_MODE -> RadioItemOptions.show(
+                this, view,
+                listOf(
+                    LocaleController.getString(R.string.InuFoldersUnreadCounterHide),
+                    LocaleController.getString(R.string.InuFoldersUnreadCounterRegular),
+                    LocaleController.getString(R.string.InuFoldersUnreadCounterExcludeMuted),
+                    LocaleController.getString(R.string.InuFoldersUnreadCounterExcludeMutedNonDms),
+                ),
+                InuConfig.FOLDERS_UNREAD_COUNTER_MODE.value,
+            ) { which ->
+                InuConfig.FOLDERS_UNREAD_COUNTER_MODE.value = which
+                // resetAllUnreadCounters dispatches updateInterfaces; DialogsActivity/MainTabsActivity listen.
+                for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+                    if (!UserConfig.getInstance(i).isClientActivated) continue
+                    val storage = MessagesStorage.getInstance(i)
+                    storage.storageQueue.postRunnable { storage.resetAllUnreadCounters(false) }
+                }
+            }
+
+            TOGGLE_HIDE_ALL_CHATS_TAB -> {
+                val new = InuConfig.HIDE_ALL_CHATS_TAB.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+                postNotificationForAllAccounts(NotificationCenter.dialogFiltersUpdated)
+            }
+
+            TOGGLE_BOT_WEBVIEW_BUTTON -> {
+                val new = InuConfig.HIDE_BOT_WEBVIEW_DIALOGS.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+                softRebuild()
+            }
+
+            TOGGLE_OLD_MENTION_INDICATOR -> {
+                val new = InuConfig.OLD_MENTION_INDICATOR.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+                softRebuild()
+            }
+
+            BUTTON_PULL_DOWN_ACTION -> showPullDownActionSelector()
+
+            TOGGLE_DISABLE_SWIPE_TO_UNARCHIVE -> {
+                val new = InuConfig.DISABLE_SWIPE_TO_UNARCHIVE.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC -> {
+                val new = InuConfig.DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_INTERACTIVE_CHAT_PREVIEW -> {
+                val new = InuConfig.INTERACTIVE_CHAT_PREVIEW.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_UNLIMITED_PINNED_CHATS -> {
+                val new = InuConfig.UNLIMITED_PINNED_CHATS.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+                for (i in 0 until UserConfig.MAX_ACCOUNT_COUNT) {
+                    if (!UserConfig.getInstance(i).isClientActivated) continue
+                    MessagesController.getInstance(i).sortDialogs(null)
+                    NotificationCenter.getInstance(i).postNotificationName(NotificationCenter.dialogsNeedReload)
+                }
+            }
+
+            TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON -> {
+                val new = InuConfig.ALWAYS_SHOW_DOWNLOADS_BUTTON.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            BUTTON_TITLE_TEXT -> RadioItemOptions.show(
+                this, view,
+                listOf(
+                    LocaleController.getString(R.string.AppName),
+                    LocaleController.getString(R.string.Username),
+                    LocaleController.getString(R.string.FirstNameSmall),
+                    LocaleController.getString(R.string.FilterChats),
+                ),
+                InuConfig.DIALOGS_TITLE_TEXT.value - 1,
+            ) { which ->
+                InuConfig.DIALOGS_TITLE_TEXT.value = which + 1
+                softRebuild()
+            }
+
+            BUTTON_COMMUNITY_DISPLAY_MODE -> showCommunityDisplayModeSelector()
+
+            BUTTON_FAB_MAIN_ACTION -> showFabActionDialog(view, InuConfig.DIALOGS_FAB_MAIN_ACTION)
+            BUTTON_FAB_SECONDARY_ACTION -> showFabActionDialog(view, InuConfig.DIALOGS_FAB_SECONDARY_ACTION)
+
+            TOGGLE_FAB_HIDE_ON_SCROLL -> {
+                val new = InuConfig.DIALOGS_FAB_HIDE_ON_SCROLL.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_FAB_OFFSET_FOR_BOTTOM_BAR -> {
+                val new = InuConfig.DIALOGS_FAB_OFFSET_FOR_BOTTOM_BAR.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+                softRebuild()
+            }
+
+            TOGGLE_FAB_LEFT_SIDE -> {
+                val new = InuConfig.DIALOGS_FAB_LEFT_SIDE.toggle()
+                (view as? TextCheckCell)?.isChecked = new
+                softRebuild()
+            }
+        }
+    }
+
+    private fun showCommunityDisplayModeSelector() {
+        val context = context ?: return
+        val values = intArrayOf(
+            InuConfig.CommunityDisplayModeItem.REGULAR,
+            InuConfig.CommunityDisplayModeItem.LONG_TAP,
+            InuConfig.CommunityDisplayModeItem.INVISIBLE,
+        )
+        val items = listOf(
+            RadioDialogBuilder.Item(LocaleController.getString(R.string.InuCommunityDisplayModeRegular)),
+            RadioDialogBuilder.Item(
+                LocaleController.getString(R.string.InuCommunityDisplayModeLongTap),
+                LocaleController.getString(R.string.InuCommunityDisplayModeLongTapInfo),
+            ),
+            RadioDialogBuilder.Item(
+                LocaleController.getString(R.string.InuCommunityDisplayModeInvisible),
+                LocaleController.getString(R.string.InuCommunityDisplayModeInvisibleInfo),
+            ),
+        )
+        showDialog(
+            RadioDialogBuilder(context, getResourceProvider())
+                .setTitle(LocaleController.getString(R.string.InuCommunityDisplayMode))
+                .setItems(items, values.indexOf(InuConfig.COMMUNITY_DISPLAY_MODE.value).coerceAtLeast(0)) { _, which ->
+                    val newValue = values[which]
+                    if (InuConfig.COMMUNITY_DISPLAY_MODE.value == newValue) return@setItems
+                    InuConfig.COMMUNITY_DISPLAY_MODE.value = newValue
+                    listView.adapter.update(true)
+                    softRebuild()
+                }.create()
+        )
+    }
+
+    private fun showPullDownActionSelector() {
+        val context = context ?: return
+        val values = intArrayOf(
+            InuConfig.PullDownActionItem.DISABLED,
+            InuConfig.PullDownActionItem.REVEAL_ARCHIVE,
+            InuConfig.PullDownActionItem.OPEN_ARCHIVE,
+            InuConfig.PullDownActionItem.SAVED_MESSAGES,
+            InuConfig.PullDownActionItem.SEARCH,
+        )
+        val items = values.map { value ->
+            if (value == InuConfig.PullDownActionItem.DISABLED) {
+                RadioDialogBuilder.Item(
+                    pullDownActionLabel(value),
+                    LocaleController.getString(R.string.InuPullDownActionDisabledInfo),
+                )
+            } else {
+                RadioDialogBuilder.Item(pullDownActionLabel(value))
+            }
+        }
+        showDialog(
+            RadioDialogBuilder(context, getResourceProvider())
+                .setTitle(LocaleController.getString(R.string.InuPullDownAction))
+                .setItems(items, values.indexOf(InuConfig.PULL_DOWN_ACTION.value).coerceAtLeast(0)) { _, which ->
+                    val newValue = values[which]
+                    if (InuConfig.PULL_DOWN_ACTION.value == newValue) return@setItems
+                    InuConfig.PULL_DOWN_ACTION.value = newValue
+                    listView.adapter.update(true)
+                    softRebuild()
+                }.create()
+        )
+    }
+
+    private fun showFabActionDialog(anchor: View, item: InuConfig.IntItem) {
+        val options = DialogsFabHelper.Action.entries
+        val current = options.indexOfFirst { it.value == item.value }.coerceAtLeast(0)
+        RadioItemOptions.show(
+            this, anchor,
+            options.map { it.label() },
+            current,
+        ) { which ->
+            item.value = options[which].value
+            softRebuild()
+        }
+    }
+
+    companion object {
+        private val BUTTON_FOLDERS_DISPLAY_MODE = InuUtils.generateId()
+        private val BUTTON_FOLDERS_UNREAD_COUNTER_MODE = InuUtils.generateId()
+        private val TOGGLE_BOT_WEBVIEW_BUTTON = InuUtils.generateId()
+        private val TOGGLE_OLD_MENTION_INDICATOR = InuUtils.generateId()
+        private val BUTTON_PULL_DOWN_ACTION = InuUtils.generateId()
+        private val TOGGLE_DISABLE_SWIPE_TO_UNARCHIVE = InuUtils.generateId()
+        private val TOGGLE_DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC = InuUtils.generateId()
+        private val BUTTON_FAB_MAIN_ACTION = InuUtils.generateId()
+        private val BUTTON_FAB_SECONDARY_ACTION = InuUtils.generateId()
+        private val TOGGLE_FAB_HIDE_ON_SCROLL = InuUtils.generateId()
+        private val TOGGLE_FAB_OFFSET_FOR_BOTTOM_BAR = InuUtils.generateId()
+        private val TOGGLE_FAB_LEFT_SIDE = InuUtils.generateId()
+        private val TOGGLE_INTERACTIVE_CHAT_PREVIEW = InuUtils.generateId()
+        private val TOGGLE_UNLIMITED_PINNED_CHATS = InuUtils.generateId()
+        private val TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON = InuUtils.generateId()
+        private val TOGGLE_HIDE_ALL_CHATS_TAB = InuUtils.generateId()
+        private val BUTTON_COMMUNITY_DISPLAY_MODE = InuUtils.generateId()
+        private val BUTTON_TITLE_TEXT = InuUtils.generateId()
+
+        private fun titleTextLabel(value: Int): String = when (value) {
+            InuConfig.DialogsTitleTextItem.USERNAME -> LocaleController.getString(R.string.Username)
+            InuConfig.DialogsTitleTextItem.FIRST_NAME -> LocaleController.getString(R.string.FirstNameSmall)
+            InuConfig.DialogsTitleTextItem.CHATS -> LocaleController.getString(R.string.FilterChats)
+            else -> LocaleController.getString(R.string.AppName)
+        }
+
+        private fun pullDownActionLabel(value: Int): String = when (value) {
+            InuConfig.PullDownActionItem.DISABLED -> LocaleController.getString(R.string.InuPullDownActionDisabled)
+            InuConfig.PullDownActionItem.OPEN_ARCHIVE -> LocaleController.getString(R.string.InuPullDownActionOpenArchive)
+            InuConfig.PullDownActionItem.SAVED_MESSAGES -> LocaleController.getString(R.string.SavedMessages)
+            InuConfig.PullDownActionItem.SEARCH -> LocaleController.getString(R.string.Search)
+            else -> LocaleController.getString(R.string.InuPullDownActionRevealArchive)
+        }
+
+        private fun communityDisplayModeLabel(value: Int): String = when (value) {
+            InuConfig.CommunityDisplayModeItem.LONG_TAP -> LocaleController.getString(R.string.InuCommunityDisplayModeLongTap)
+            InuConfig.CommunityDisplayModeItem.INVISIBLE -> LocaleController.getString(R.string.InuCommunityDisplayModeInvisible)
+            else -> LocaleController.getString(R.string.InuCommunityDisplayModeRegular)
+        }
+
+        @JvmField
+        val PAGE = SearchRegistry.Page(
+            slug = "dialogs",
+            titleRes = R.string.InuMainPage,
+            iconRes = R.drawable.msg_viewchats,
+            factory = ::DialogsSettingsActivity,
+            entries = listOf(
+                SearchRegistry.Entry("folders-display-mode", R.string.InuFoldersDisplayMode, BUTTON_FOLDERS_DISPLAY_MODE),
+                SearchRegistry.Entry("folders-unread-counter", R.string.InuFoldersUnreadCounter, BUTTON_FOLDERS_UNREAD_COUNTER_MODE),
+                SearchRegistry.Entry("hide-all-chats-tab", R.string.InuHideAllChatsTab, TOGGLE_HIDE_ALL_CHATS_TAB),
+                SearchRegistry.Entry("title-text", R.string.InuTitleText, BUTTON_TITLE_TEXT),
+                SearchRegistry.Entry("old-mention-indicator", R.string.InuOldMentionIndicator, TOGGLE_OLD_MENTION_INDICATOR),
+                SearchRegistry.Entry("pull-down-action", R.string.InuPullDownAction, BUTTON_PULL_DOWN_ACTION),
+                SearchRegistry.Entry("disable-swipe-to-unarchive", R.string.InuDisableSwipeToUnarchive, TOGGLE_DISABLE_SWIPE_TO_UNARCHIVE),
+                SearchRegistry.Entry("disable-swipe-to-hide-general-topic", R.string.InuDisableSwipeToHideGeneralTopic, TOGGLE_DISABLE_SWIPE_TO_HIDE_GENERAL_TOPIC),
+                SearchRegistry.Entry("hide-bot-webview-dialogs", R.string.InuHideBotWebView, TOGGLE_BOT_WEBVIEW_BUTTON),
+                SearchRegistry.Entry("disable-chat-preview-expand", R.string.InuDisableChatPreviewExpand, TOGGLE_INTERACTIVE_CHAT_PREVIEW),
+                SearchRegistry.Entry("unlimited-pinned-chats", R.string.InuUnlimitedPinnedChats, TOGGLE_UNLIMITED_PINNED_CHATS),
+                SearchRegistry.Entry("always-show-downloads-button", R.string.InuAlwaysShowDownloadsButton, TOGGLE_ALWAYS_SHOW_DOWNLOADS_BUTTON),
+                SearchRegistry.Entry("community-display-mode", R.string.InuCommunityDisplayMode, BUTTON_COMMUNITY_DISPLAY_MODE),
+                SearchRegistry.Entry("dialogs-fab-main-action", R.string.InuDialogsFabMainAction, BUTTON_FAB_MAIN_ACTION),
+                SearchRegistry.Entry("dialogs-fab-secondary-action", R.string.InuDialogsFabSecondaryAction, BUTTON_FAB_SECONDARY_ACTION),
+                SearchRegistry.Entry("dialogs-fab-hide-on-scroll", R.string.InuDialogsFabHideOnScroll, TOGGLE_FAB_HIDE_ON_SCROLL),
+                SearchRegistry.Entry("dialogs-fab-offset-for-bottom-bar", R.string.InuDialogsFabOffsetForBottomBar, TOGGLE_FAB_OFFSET_FOR_BOTTOM_BAR),
+                SearchRegistry.Entry("dialogs-fab-left-side", R.string.InuDialogsFabLeftSide, TOGGLE_FAB_LEFT_SIDE),
+            ),
+        )
+    }
+}

@@ -1,0 +1,486 @@
+package xie.fa.gram.helpers.update
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.net.Uri
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.text.TextUtils
+import android.util.TypedValue
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
+import java.security.MessageDigest
+import xie.fa.gram.helpers.NotificationsHelper
+import org.telegram.messenger.AndroidUtilities
+import org.telegram.messenger.ApplicationLoader
+import org.telegram.messenger.FileLoader
+import org.telegram.messenger.FileLog
+import org.telegram.messenger.LocaleController
+import org.telegram.messenger.R
+import org.telegram.messenger.UserConfig
+import org.telegram.messenger.Utilities
+import org.telegram.messenger.XiaomiUtilities
+import org.telegram.tgnet.TLRPC
+import org.telegram.ui.ActionBar.AlertDialog
+import org.telegram.ui.ActionBar.Theme
+import org.telegram.ui.Components.AlertsCreator
+import org.telegram.ui.Components.LayoutHelper
+import org.telegram.ui.Components.RLottieImageView
+import org.telegram.ui.LaunchActivity
+import java.io.File
+import java.io.IOException
+
+object ApkInstaller {
+    private const val ACTION = "xie.fa.gram.helpers.update.ApkInstaller.STATUS"
+
+    fun dismissInstalledNotification() {
+        NotificationManagerCompat.from(ApplicationLoader.applicationContext)
+            .cancel(UpdateReceiver.NOTIFICATION_ID)
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    @Volatile
+    private var dialog: AlertDialog? = null
+
+    fun installUpdate(activity: Activity, document: TLRPC.Document, expectedSha256: String? = null) {
+        val apk = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true)
+        if (apk == null || !apk.exists()) {
+            return
+        }
+
+        // On Android 8.0+ (API 26+), verify canRequestPackageInstalls() before launching
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
+            requestInstallPermission(activity)
+            return
+        }
+
+        if (dialog?.isShowing == true) return
+
+        val progressBar = buildProgressBar(activity)
+        dialog = buildProgressDialog(activity, progressBar).also { it.show() }
+
+        Utilities.globalQueue.postRunnable {
+            // SHA-256 Checksum Verification
+            val targetHash = expectedSha256
+                ?: UpdateHelper.pendingSha256
+
+            if (!targetHash.isNullOrBlank()) {
+                val computedHash = runCatching { computeSha256(apk) }.getOrNull()
+                if (computedHash == null || !computedHash.equals(targetHash.trim(), ignoreCase = true)) {
+                    android.util.Log.e("ApkInstaller", "Checksum mismatch! Expected: $targetHash, computed: $computedHash")
+                    apk.delete()
+                    AndroidUtilities.runOnUIThread {
+                        dialog?.dismiss()
+                        dialog = null
+                        showChecksumError(activity)
+                    }
+                    return@postRunnable
+                }
+                android.util.Log.d("ApkInstaller", "Checksum verified successfully: $computedHash")
+            } else {
+                android.util.Log.w("ApkInstaller", "SHA-256 checksum is missing, proceeding without checksum validation")
+            }
+
+            if (hasBrokenPackageInstaller()) {
+                AndroidUtilities.runOnUIThread {
+                    dialog?.dismiss()
+                    dialog = null
+                    installViaIntent(activity, apk)
+                }
+                return@postRunnable
+            }
+
+            val receiver = registerStatusReceiver(activity) {
+                AndroidUtilities.runOnUIThread {
+                    dialog?.dismiss()
+                    dialog = null
+                }
+            }
+            val started = runCatching { commitSession(activity, apk) }
+            val sessionId = started.getOrElse { err ->
+                FileLog.e(err)
+                AndroidUtilities.runOnUIThread {
+                    dialog?.dismiss()
+                    dialog = null
+                    AlertsCreator.createSimpleAlert(
+                        activity,
+                        LocaleController.getString(R.string.ErrorOccurred) + "\n" + (err.localizedMessage ?: ""),
+                    ).show()
+                    installViaIntent(activity, apk)
+                }
+                runCatching { activity.unregisterReceiver(receiver) }
+                return@postRunnable
+            }
+            registerProgressCallback(activity, sessionId, progressBar)
+        }
+    }
+
+    fun installViaIntent(activity: Activity, apk: File) {
+        if (!apk.exists()) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
+            requestInstallPermission(activity)
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(
+            activity,
+            ApplicationLoader.getApplicationId() + ".provider",
+            apk,
+        )
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            activity.startActivity(intent)
+        } catch (e: Exception) {
+            FileLog.e(e)
+            val fallback = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try {
+                activity.startActivity(fallback)
+            } catch (e2: Exception) {
+                FileLog.e(e2)
+                AlertsCreator.createSimpleAlert(
+                    activity,
+                    LocaleController.getString(R.string.ErrorOccurred) + "\n" + (e2.localizedMessage ?: ""),
+                ).show()
+            }
+        }
+    }
+
+    fun installViaIntent(activity: Activity, document: TLRPC.Document) {
+        val apk = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true) ?: return
+        installViaIntent(activity, apk)
+    }
+
+    fun requestInstallPermission(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${activity.packageName}")
+                }
+                activity.startActivity(intent)
+            } catch (e: Exception) {
+                FileLog.e(e)
+            }
+        }
+    }
+
+    fun computeSha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { stream ->
+            val buffer = ByteArray(65536)
+            var bytesRead: Int
+            while (stream.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun showChecksumError(activity: Activity) {
+        val message = LocaleController.getString(R.string.InuUpdateChecksumMismatch)
+        val launch = LaunchActivity.instance ?: (activity as? LaunchActivity)
+        if (launch != null) {
+            launch.showBulletin { factory ->
+                factory.createErrorBulletin(message)
+            }
+        } else {
+            AlertsCreator.createSimpleAlert(activity, message).show()
+        }
+    }
+
+    // Drives the dialog progress bar off the system's install progress. Some OEMs/ROMs
+    // never emit progress events — the bar then stays indeterminate for the whole install.
+    private fun registerProgressCallback(context: Context, sessionId: Int, progressBar: ProgressBar) {
+        val installer = context.packageManager.packageInstaller
+        runCatching {
+            installer.registerSessionCallback(
+                object : PackageInstaller.SessionCallback() {
+                    override fun onCreated(id: Int) = Unit
+                    override fun onBadgingChanged(id: Int) = Unit
+                    override fun onActiveChanged(id: Int, active: Boolean) = Unit
+
+                    override fun onProgressChanged(id: Int, progress: Float) {
+                        if (id != sessionId) return
+                        if (progressBar.isIndeterminate) progressBar.isIndeterminate = false
+                        progressBar.progress = (progress.coerceIn(0f, 1f) * progressBar.max).toInt()
+                    }
+
+                    override fun onFinished(id: Int, success: Boolean) {
+                        if (id != sessionId) return
+                        runCatching { installer.unregisterSessionCallback(this) }
+                    }
+                },
+                Handler(Looper.getMainLooper()),
+            )
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun commitSession(activity: Activity, apk: File): Int {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        val intent = Intent(ACTION).setPackage(activity.packageName)
+        val pending = PendingIntent.getBroadcast(activity, 0, intent, flags)
+
+        val installer = activity.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
+        val sessionId = installer.createSession(params)
+        installer.openSession(sessionId).use { session ->
+            session.openWrite(apk.name, 0, apk.length()).use { out ->
+                apk.inputStream().use { it.copyTo(out) }
+            }
+            session.commit(pending.intentSender)
+        }
+        return sessionId
+    }
+
+    private fun registerStatusReceiver(activity: Activity, onDone: Runnable): InstallReceiver {
+        val receiver = InstallReceiver(activity, ApplicationLoader.getApplicationId(), onDone)
+        ContextCompat.registerReceiver(
+            activity, receiver, IntentFilter(ACTION), ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        return receiver
+    }
+
+    // MIUI silently blocks PackageInstaller.commit() (broadcast never fires) regardless of which
+    // installer is set as default, so always fall back to Intent.ACTION_VIEW there.
+    fun hasBrokenPackageInstaller(): Boolean = XiaomiUtilities.isMIUI()
+
+    private fun buildProgressBar(context: Context): ProgressBar {
+        val accent = ColorStateList.valueOf(Theme.getColor(Theme.key_dialogLineProgress))
+        return ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = true
+            max = 1000
+            progressTintList = accent
+            indeterminateTintList = accent
+            progressBackgroundTintList =
+                ColorStateList.valueOf(Theme.getColor(Theme.key_dialogLineProgressBackground))
+        }
+    }
+
+    private fun buildProgressDialog(context: Context, progressBar: ProgressBar): AlertDialog {
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT.toFloat(),
+                Gravity.TOP or Gravity.LEFT, 4f, 4f, 4f, 4f,
+            )
+        }
+        val image = RLottieImageView(context).apply {
+            setAutoRepeat(true)
+            setAnimation(R.raw.db_migration_placeholder, 160, 160)
+            playAnimation()
+        }
+        container.addView(
+            image,
+            LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL or Gravity.TOP, 17, 24, 17, 0),
+        )
+        val title = TextView(context).apply {
+            typeface = AndroidUtilities.bold()
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f)
+            setTextColor(Theme.getColor(Theme.key_dialogTextBlack))
+            isSingleLine = true
+            ellipsize = TextUtils.TruncateAt.END
+            text = LocaleController.getString(R.string.InuUpdateInstalling)
+        }
+        container.addView(
+            title,
+            LayoutHelper.createLinear(
+                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.CENTER_HORIZONTAL or Gravity.TOP, 17, 20, 17, 0,
+            ),
+        )
+        val subtitle = TextView(context).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f)
+            setTextColor(Theme.getColor(Theme.key_dialogTextGray))
+            text = LocaleController.getString(
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Build.VERSION.SDK_INT >= 37 || Settings.canDrawOverlays(context)) {
+                    R.string.InuUpdateInstallingHint
+                } else {
+                    R.string.InuUpdateInstallingNotificationHint
+                }
+            )
+        }
+        container.addView(
+            subtitle,
+            LayoutHelper.createLinear(
+                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.CENTER_HORIZONTAL or Gravity.TOP, 17, 4, 17, 14,
+            ),
+        )
+        container.addView(
+            progressBar,
+            LayoutHelper.createLinear(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.CENTER_HORIZONTAL or Gravity.TOP, 21, 0, 21, 24,
+            ),
+        )
+        val builder = AlertDialog.Builder(context)
+        builder.setView(container)
+        return builder.create().apply {
+            setCanceledOnTouchOutside(false)
+            setCancelable(false)
+        }
+    }
+
+    private class InstallReceiver(
+        private val context: Context,
+        private val packageName: String,
+        private val onDone: Runnable,
+    ) : BroadcastReceiver() {
+        @Volatile
+        private var unregistered = false
+
+        override fun onReceive(c: Context, i: Intent) {
+            if (Intent.ACTION_PACKAGE_ADDED == i.action) {
+                if (i.data?.schemeSpecificPart == packageName) {
+                    onDone.run()
+                    safeUnregister()
+                }
+                return
+            }
+            val status = i.getIntExtra(
+                PackageInstaller.EXTRA_STATUS,
+                PackageInstaller.STATUS_FAILURE_INVALID,
+            )
+            if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                // system wants the user to confirm — hand off to its installer UI,
+                // stay registered for the follow-up terminal status.
+                @Suppress("DEPRECATION")
+                val confirm = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                if (confirm != null && runCatching { context.startActivity(confirm) }.isSuccess) {
+                    return
+                }
+                // handoff failed (missing intent / no activity) — abandon the session
+                // and fall through so the non-cancelable progress dialog isn't stuck.
+                abandonSession(i.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, 0))
+            }
+            if (isFailure(status)) {
+                abandonSession(i.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, 0))
+                showInstallError(status)
+            } else if (status == PackageInstaller.STATUS_SUCCESS) {
+                UpdateHelper.clearPending()
+            }
+            onDone.run()
+            safeUnregister()
+        }
+
+        private fun isFailure(status: Int) = when (status) {
+            PackageInstaller.STATUS_FAILURE,
+            PackageInstaller.STATUS_FAILURE_BLOCKED,
+            PackageInstaller.STATUS_FAILURE_CONFLICT,
+            PackageInstaller.STATUS_FAILURE_INCOMPATIBLE,
+            PackageInstaller.STATUS_FAILURE_INVALID,
+            PackageInstaller.STATUS_FAILURE_STORAGE -> true
+
+            else -> false
+        }
+
+        private fun abandonSession(sessionId: Int) {
+            if (sessionId <= 0) return
+            runCatching {
+                val pi = context.packageManager.packageInstaller
+                pi.getSessionInfo(sessionId)?.let { pi.abandonSession(it.sessionId) }
+            }
+        }
+
+        private fun showInstallError(status: Int) {
+            val launch = LaunchActivity.instance ?: return
+            AndroidUtilities.runOnUIThread {
+                launch.showBulletin { factory ->
+                    factory.createErrorBulletin(
+                        LocaleController.formatString(R.string.InuUpdateFailedToInstall, status),
+                    )
+                }
+            }
+        }
+
+        private fun safeUnregister() {
+            if (unregistered) return
+            unregistered = true
+            runCatching { context.unregisterReceiver(this) }
+        }
+    }
+
+    class UpdateReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+            // android 17+ relaunches a running app by itself after update
+            if (Build.VERSION.SDK_INT >= 37) return
+            val pkg = context.packageName
+            if (pkg != context.packageManager.getInstallerPackageName(pkg)) return
+
+            val launch = Intent(context, LaunchActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(context)) {
+                context.startActivity(launch)
+                return
+            }
+
+            val nm = NotificationManagerCompat.from(context)
+            nm.createNotificationChannel(
+                NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_HIGH)
+                    .setName(LocaleController.getString(R.string.InuUpdateNotificationChannel))
+                    .setLightsEnabled(false)
+                    .setVibrationEnabled(false)
+                    .setSound(null, null)
+                    .build(),
+            )
+            val pi = PendingIntent.getActivity(
+                context, 0, launch,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                nm.notify(
+                    NOTIFICATION_ID,
+                    NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(NotificationsHelper.smallIconRes())
+                        .setShowWhen(false)
+                        .setContentText(LocaleController.getString(R.string.InuUpdateInstalledNotification))
+                        .setCategory(NotificationCompat.CATEGORY_STATUS)
+                        .setContentIntent(pi)
+                        .setAutoCancel(true)
+                        .build(),
+                )
+            }
+        }
+
+        companion object {
+            private const val CHANNEL_ID = "inu_updated"
+            const val NOTIFICATION_ID = 1337
+        }
+    }
+}

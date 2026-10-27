@@ -1,0 +1,67 @@
+package xie.fa.gram.helpers
+
+import android.text.TextUtils
+import android.util.Base64
+import org.telegram.messenger.FileLog
+import org.telegram.messenger.LocaleController
+import org.telegram.messenger.R
+import org.telegram.tgnet.OutputSerializedData
+import org.telegram.tgnet.TLObject
+import org.telegram.tgnet.TLRPC
+import org.telegram.ui.ActionBar.BaseFragment
+import org.telegram.ui.LaunchActivity
+import org.telegram.ui.bots.BotWebViewSheet
+import org.telegram.ui.bots.WebViewRequestProps
+
+
+object WebAppHelper {
+    const val HELPER_BOT_USERNAME = "inu_helper_bot"
+    const val HELPER_BOT_ID = 8589894659L
+
+    @JvmStatic
+    fun openTlViewer(fragment: BaseFragment, arr: List<TLObject>) {
+        openTlViewer(fragment, object : TLObject() {
+            override fun serializeToStream(stream: OutputSerializedData) {
+                stream.writeInt32(0x1cb5c415)
+                stream.writeInt32(arr.size)
+                for (obj in arr) {
+                    obj.serializeToStream(stream)
+                }
+            }
+        })
+    }
+
+    @JvmStatic
+    fun openTlViewer(fragment: BaseFragment, obj: TLObject) {
+        var serialized = "";
+        try {
+            val data = InuUtils.CleanSerializedData(obj.getObjectSize());
+            obj.serializeToStream(data);
+            serialized =
+                Base64.encodeToString(data.toByteArray(), Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)
+            data.cleanup();
+        } catch (e: Exception) {
+            FileLog.e(e);
+        }
+        if (TextUtils.isEmpty(serialized)) {
+            return;
+        }
+        val url = "https://schema.jppgr.am/embed#data=" + serialized + "&layer=" + TLRPC.LAYER + "&hide-toolbar=1";
+        openInternalWebApp(fragment, url, LocaleController.getString(R.string.InuShowJson))
+    }
+
+    private fun openInternalWebApp(fragment: BaseFragment, url: String, name: String) {
+        val context = fragment.parentActivity ?: return
+        val props = WebViewRequestProps.of(
+            fragment.currentAccount, 0, 0, name, url, BotWebViewSheet.TYPE_FAKE_WEB_VIEW,
+            0, 0, false, null, false, null, null, 0, false, false
+        )
+        if ((context as? LaunchActivity)?.bottomSheetTabs?.tryReopenTab(props) != null) return
+        val webViewSheet = BotWebViewSheet(context, fragment.resourceProvider)
+        webViewSheet.setDefaultFullsize(false)
+        webViewSheet.setNeedsContext(false)
+        webViewSheet.setParentActivity(context)
+        webViewSheet.requestWebView(null, props)
+        webViewSheet.show()
+    }
+}

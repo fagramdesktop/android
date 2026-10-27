@@ -1,0 +1,123 @@
+package xie.fa.gram.helpers.plugins
+
+import xie.fa.gram.core.plugins.ObfuscationDetector
+import xie.fa.gram.core.plugins.PluginAssetsParser
+import xie.fa.gram.core.plugins.PluginManifest
+import xie.fa.gram.core.plugins.PluginManifestParser
+import xie.fa.gram.core.plugins.PluginOrigin
+import xie.fa.gram.ui.settings.PluginInstallSheet
+import xie.fa.gram.ui.settings.PluginTrustSheet
+import org.telegram.messenger.AndroidUtilities
+import org.telegram.messenger.LocaleController.formatString
+import org.telegram.messenger.LocaleController.getString
+import org.telegram.messenger.R
+import org.telegram.ui.ActionBar.BaseFragment
+import org.telegram.ui.Components.BulletinFactory
+import java.io.File
+
+/** parsing and obfuscation scanning read the whole file, so they run off the ui thread */
+object PluginImportHelper {
+    fun startImportFromFile(fragment: BaseFragment, file: File) {
+        EngineDispatch.scheduler.postRunnable {
+            val source = runCatching { file.readText() }.getOrNull()
+            if (source == null) {
+                failOnUi(fragment, getString(R.string.InuPluginsErrorRead))
+                return@postRunnable
+            }
+            present(fragment, source)
+        }
+    }
+
+    fun startImport(fragment: BaseFragment, source: String, origin: PluginOrigin? = null) {
+        EngineDispatch.scheduler.postRunnable { present(fragment, source, origin) }
+    }
+
+    private fun failOnUi(fragment: BaseFragment, message: String) {
+        AndroidUtilities.runOnUIThread { showError(fragment, message) }
+    }
+
+    /** plugin queue only */
+    private fun present(fragment: BaseFragment, source: String, origin: PluginOrigin? = null) {
+        val manifest = PluginManifestParser.parseOrNull(source)
+        if (manifest == null) {
+            failOnUi(fragment, getString(R.string.InuPluginsErrorNoManifest))
+            return
+        }
+        val refusal = PluginManager.incompatibility(manifest) ?: PluginManager.badAssets(source)
+        if (refusal != null) {
+            failOnUi(fragment, refusal)
+            return
+        }
+        val assets = PluginAssetsParser.parse(source)
+        val obfuscation = ObfuscationDetector.detect(source.substring(0, PluginAssetsParser.findFooter(source)))
+        val installed = PluginManager.findUpdateTarget(manifest)
+        // the file, not `installed.source`: something may have rewritten it behind the app
+        if (installed != null && runCatching { installed.file.readText() }.getOrElse { installed.source } == source) {
+            AndroidUtilities.runOnUIThread {
+                BulletinFactory.of(fragment)
+                    .createSimpleBulletin(
+                        R.raw.info,
+                        formatString(R.string.InuPluginAlreadyInstalled, manifest.name),
+                    )
+                    .show()
+            }
+            return
+        }
+        AndroidUtilities.runOnUIThread {
+            val context = fragment.context ?: fragment.parentActivity ?: return@runOnUIThread
+            // what any plugin could do is accepted once, before the first install
+            PluginTrustSheet.requireConsent(context, fragment.resourceProvider) {
+                // not `showDialog`: the fragment dismisses that on pause, and the sheet can open files in other apps
+                PluginInstallSheet(context, fragment, manifest, source, assets, obfuscation, installed?.manifest) { enable ->
+                    // re-resolved: the installed set is the ui thread's to answer for
+                    val target = PluginManager.findUpdateTarget(manifest)
+                    if (target != null) confirmUpdate(fragment, target, manifest, source, origin)
+                    else confirmInstall(fragment, manifest, source, enable, origin)
+                }.show()
+            }
+        }
+    }
+
+    private fun confirmInstall(
+        fragment: BaseFragment,
+        manifest: PluginManifest,
+        source: String,
+        enable: Boolean,
+        origin: PluginOrigin?,
+    ) {
+        when (val result = PluginManager.import(source, enable, origin = origin)) {
+            is PluginManager.ImportResult.Refused -> showError(fragment, result.reason)
+            is PluginManager.ImportResult.Installed -> {
+                val text = formatString(R.string.InuPluginInstalled, manifest.name)
+                val factory = BulletinFactory.of(fragment)
+                if (result.reversible) {
+                    factory.createUndoBulletin(text, { PluginManager.remove(result.plugin) }, {}).show()
+                } else {
+                    factory.createSimpleBulletin(R.raw.info, text).show()
+                }
+            }
+        }
+    }
+
+    /** no undo: the replaced source is gone, and stores are untouched anyway */
+    private fun confirmUpdate(
+        fragment: BaseFragment,
+        installed: Plugin,
+        manifest: PluginManifest,
+        source: String,
+        origin: PluginOrigin?,
+    ) {
+        val error = PluginManager.update(installed, source, origin = origin)
+        if (error != null) {
+            showError(fragment, error)
+            return
+        }
+        BulletinFactory.of(fragment)
+            .createSimpleBulletin(R.raw.info, formatString(R.string.InuPluginUpdated, manifest.name))
+            .show()
+    }
+
+    private fun showError(fragment: BaseFragment, message: String) {
+        BulletinFactory.of(fragment).createErrorBulletin(message).show()
+    }
+}

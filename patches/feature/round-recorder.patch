@@ -6,8 +6,12 @@ Subject: improvements to the round recorder
 ---
  .../messenger/camera/Camera2Session.java      | 18 ++++++++
  .../messenger/camera/CameraSession.java       |  2 +-
- .../ui/Components/InstantCameraView.java      | 41 ++++++++++++++-----
- 3 files changed, 50 insertions(+), 11 deletions(-)
+ .../ui/Components/InstantCameraView.java      | 41 +++++++++++++----
+ .../ui/Components/InstantCameraView2.java     | 46 +++++++++++++------
+ .../ui/Components/InstantCameraViewBase.java  |  4 +-
+ .../round/RoundVideoCameraController.java     |  1 +
+ .../utils/settings/SharedSettings.java        |  2 +-
+ 7 files changed, 84 insertions(+), 30 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/camera/Camera2Session.java b/TMessagesProj/src/main/java/org/telegram/messenger/camera/Camera2Session.java
 index 0000000..0000000 100644
@@ -76,7 +80,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCamer
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView.java
-@@ -69,6 +69,7 @@ import androidx.core.graphics.ColorUtils;
+@@ -70,6 +70,7 @@ import androidx.core.graphics.ColorUtils;
  
  import androidx.media3.exoplayer.ExoPlayer;
  
@@ -84,7 +88,7 @@ index 0000000..0000000 100644
  import xie.fa.gram.helpers.chat.VoiceRecorderHelper;
  import org.telegram.messenger.AndroidUtilities;
  import org.telegram.messenger.ApplicationLoader;
-@@ -325,6 +326,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -331,6 +332,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
          buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
          addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 1, 0, 0, 0));
  
@@ -93,7 +97,7 @@ index 0000000..0000000 100644
          switchCameraButton = new FlashViews.ImageViewInvertable(context);
          switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
          switchCameraButton.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
-@@ -595,6 +598,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -601,6 +604,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
  
      public void destroy(boolean async) {
          if (useCamera2) {
@@ -101,7 +105,7 @@ index 0000000..0000000 100644
              for (int a = 0; a < camera2Sessions.length; ++a) {
                  if (camera2Sessions[a] != null) {
                      camera2Sessions[a].destroy(async);
-@@ -666,6 +670,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -672,6 +676,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
          if (recording) {
              cancelled = recordedTime < 800;
              recording = false;
@@ -109,7 +113,7 @@ index 0000000..0000000 100644
              updateFlash();
              if (cameraThread != null) {
                  NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, cancelled ? 4 : 2);
-@@ -774,8 +779,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -780,8 +785,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
          }
  
          if (useCamera2) {
@@ -120,8 +124,8 @@ index 0000000..0000000 100644
                  for (int a = 0; a < 2; ++a) {
                      if (camera2Sessions[a] == null) {
                          camera2Sessions[a] = Camera2Session.create(a == 0, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize);
-@@ -791,6 +797,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
-                     bothCameras = false;
+@@ -803,6 +809,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+                             + ", backSession=" + (camera2Sessions[1] != null));
                  }
                  if (camera2SessionCurrent == null) return;
 +                // dual: render/encode is driven by surfaceIndex, not camera2SessionCurrent
@@ -129,7 +133,7 @@ index 0000000..0000000 100644
              } else {
                  camera2SessionCurrent = camera2Sessions[isFrontface ? 0 : 1] = Camera2Session.create(isFrontface, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize);
                  if (camera2SessionCurrent == null) return;
-@@ -1018,6 +1026,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -1030,6 +1038,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
              cancelled = recordedTime < 800;
              recording = false;
              flashing = false;
@@ -137,7 +141,7 @@ index 0000000..0000000 100644
              updateFlash();
              int reason;
              if (cancelled) {
-@@ -1077,6 +1086,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -1089,6 +1098,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
          cancelled = true;
          recording = false;
          flashing = false;
@@ -145,15 +149,15 @@ index 0000000..0000000 100644
          updateFlash();
          NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, byGesture ? 0 : 6);
          if (cameraThread != null) {
-@@ -1167,6 +1177,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -1197,6 +1207,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
          initCamera();
          cameraReady = false;
          cameraThread.reinitForNewCamera();
 +        RoundRecorderHelper.syncSlider(inu_zoomSlider, camera2SessionCurrent, cameraSession);
      }
  
-     // Old Camera1 API
-@@ -1333,9 +1344,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+     private void logLegacyCameraSwitchStage(String stage) {
+@@ -1379,9 +1390,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
  
              if (useCamera2) {
                  if (bothCameras) {
@@ -164,7 +168,7 @@ index 0000000..0000000 100644
                  } else {
                      if (index == 1) return;
                      cameraThread.setCurrentSession(camera2SessionCurrent);
-@@ -1979,6 +1988,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -2041,6 +2050,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
  
                      textureBuffer = ByteBuffer.allocateDirect(texData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
                      textureBuffer.put(texData).position(0);
@@ -172,7 +176,7 @@ index 0000000..0000000 100644
                      break;
                  }
              }
-@@ -3254,6 +3264,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -3316,6 +3326,8 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                      recordPlusTime = fromPause ? recordedTime : 0;
                      recordStartTime = System.currentTimeMillis();
                      recording = true;
@@ -181,7 +185,7 @@ index 0000000..0000000 100644
                      updateFlash();
                      invalidate();
                      NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid, false);
-@@ -3765,6 +3777,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -3827,6 +3839,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                  pinchStartDistance = (float) Math.hypot(ev.getX(1) - ev.getX(0), ev.getY(1) - ev.getY(0));
  
                  pinchScale = 1f;
@@ -189,7 +193,7 @@ index 0000000..0000000 100644
  
                  pointerId1 = ev.getPointerId(0);
                  pointerId2 = ev.getPointerId(1);
-@@ -3793,15 +3806,17 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -3855,15 +3868,17 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                  return false;
              }
              pinchScale = (float) Math.hypot(ev.getX(index2) - ev.getX(index1), ev.getY(index2) - ev.getY(index1)) / pinchStartDistance;
@@ -209,7 +213,7 @@ index 0000000..0000000 100644
          } else if ((ev.getActionMasked() == MotionEvent.ACTION_UP || (ev.getActionMasked() == MotionEvent.ACTION_POINTER_UP && checkPointerIds(ev)) || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) && isInPinchToZoomTouchMode) {
              isInPinchToZoomTouchMode = false;
              finishZoom();
-@@ -3810,32 +3825,38 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
+@@ -3872,32 +3887,38 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
      }
  
      ValueAnimator finishZoomTransition;
@@ -252,3 +256,166 @@ index 0000000..0000000 100644
              });
              finishZoomTransition.addListener(new AnimatorListenerAdapter() {
                  @Override
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView2.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView2.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView2.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraView2.java
+@@ -31,6 +31,8 @@ import android.widget.LinearLayout;
+ 
+ import androidx.annotation.NonNull;
+ 
++import xie.fa.gram.helpers.chat.RoundRecorderHelper;
++import xie.fa.gram.helpers.chat.VoiceRecorderHelper;
+ import org.telegram.messenger.AndroidUtilities;
+ import org.telegram.messenger.ApplicationLoader;
+ import org.telegram.messenger.FileLog;
+@@ -127,6 +129,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+     private int zoomPointerId2 = -1;
+ 
+     private boolean pinchZoomActive;
++    private ZoomControlView inu_zoomSlider;
++    private float inu_pinchStartT;
+     private boolean heavyOperationsStopped;
+     private float previousWindowBrightness = Float.NaN;
+     private int textureViewSize;
+@@ -242,6 +246,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+                 0
+         ));
+ 
++        inu_zoomSlider = RoundRecorderHelper.attachZoomSlider(this, t -> inu_setZoomT(t));
++
+         switchCameraButton = new FlashViews.ImageViewInvertable(context);
+         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
+         switchCameraButton.setContentDescription(
+@@ -381,7 +387,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+         activeOutputResolution = SharedSettings.roundVideoOutputResolution.get();
+         session = new RoundVideoSession.Builder(getContext(), textureView)
+                 .setOutputDirectory(new File(ApplicationLoader.getFilesDirFixed(), "cache"))
+-                .setInitialFacing(SharedSettings.roundVideoLastCamera.get())
++                .setInitialFacing(VoiceRecorderHelper.nextCameraFront ? RoundVideoSession.CameraFacing.FRONT : RoundVideoSession.CameraFacing.BACK)
+                 .setOutputResolution(activeOutputResolution)
+                 .setVideoBitrate(SharedSettings.roundVideoVideoBitrate.get())
+                 .setCameraResolution(SharedSettings.roundVideoCameraResolution.get())
+@@ -699,6 +705,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+                 postRecordStopped(2);
+             }
+             updateButtons();
++            zoomProgress = info.getZoomProgress();
++            inu_syncZoomSlider();
++            RoundRecorderHelper.setSliderVisible(inu_zoomSlider, info.getState() == RoundVideoSession.State.RECORDING);
+         }
+ 
+         @Override
+@@ -710,6 +719,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+                 SharedSettings.roundVideoLastCamera.set(cameraCapabilities.getActiveFacing());
+             }
+             updateButtons();
++            inu_syncZoomSlider();
+         }
+ 
+         @Override
+@@ -1000,7 +1010,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+             zoomPointerId2 = event.getPointerId(1);
+             pinchStartDistance = pointerDistance(event, 0, 1);
+             pinchZoomActive = pinchStartDistance > 0f;
+-            zoomProgress = 0f;
++            inu_pinchStartT = RoundRecorderHelper.zoomProgressToT(zoomProgress, inu_getMaximumZoomRatio());
+             return true;
+         }
+         if (event.getActionMasked() == MotionEvent.ACTION_MOVE && pinchZoomActive) {
+@@ -1011,19 +1021,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+                 return true;
+             }
+             float scale = pointerDistance(event, index1, index2) / pinchStartDistance;
+-            float maximumZoomRatio = capabilities == null
+-                    ? 1f
+-                    : capabilities.getMaximumZoomRatio();
+-            float requestedZoomRatio = 1f
+-                    + Math.max(0f, scale - 1f) / ZOOM_GESTURE_EFFORT;
+-            zoomProgress = maximumZoomRatio <= 1f
+-                    ? 0f
+-                    : clamp(
+-                            (requestedZoomRatio - 1f) / (maximumZoomRatio - 1f),
+-                            0f,
+-                            1f
+-                    );
+-            session.setZoom(zoomProgress);
++            inu_setZoomT(inu_pinchStartT + RoundRecorderHelper.pinchDeltaT(scale));
+             return true;
+         }
+         if (event.getActionMasked() == MotionEvent.ACTION_POINTER_UP && pinchZoomActive) {
+@@ -1053,9 +1051,26 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+         pinchZoomActive = false;
+         zoomPointerId1 = -1;
+         zoomPointerId2 = -1;
++        if (xie.fa.gram.InuConfig.ROUND_RECORDER_KEEP_ZOOM.getValue()) return;
+         animateZoomReset();
+     }
+ 
++    private float inu_getMaximumZoomRatio() {
++        return capabilities == null ? 1f : capabilities.getMaximumZoomRatio();
++    }
++
++    private void inu_setZoomT(float t) {
++        if (session == null) return;
++        float progress = RoundRecorderHelper.zoomTToProgress(t, inu_getMaximumZoomRatio());
++        if (session.setZoom(progress)) zoomProgress = progress;
++        inu_syncZoomSlider();
++    }
++
++    private void inu_syncZoomSlider() {
++        if (inu_zoomSlider == null) return;
++        inu_zoomSlider.setZoom(RoundRecorderHelper.zoomProgressToT(zoomProgress, inu_getMaximumZoomRatio()), false);
++    }
++
+     private void animateZoomReset() {
+         if (session == null) return;
+         if (zoomResetAnimator != null) zoomResetAnimator.cancel();
+@@ -1064,6 +1079,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
+         zoomResetAnimator.addUpdateListener(animation -> {
+             zoomProgress = (float) animation.getAnimatedValue();
+             if (session != null) session.setZoom(zoomProgress);
++            inu_syncZoomSlider();
+         });
+         zoomResetAnimator.start();
+     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraViewBase.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraViewBase.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraViewBase.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/InstantCameraViewBase.java
+@@ -50,9 +50,7 @@ public abstract class InstantCameraViewBase extends FrameLayout {
+             Theme.ResourcesProvider resourcesProvider,
+             boolean isNewDesign
+     ) {
+-        final boolean useCamera2Impl = SharedSettings.roundVideoCamera2Enabled.isSet() ?
+-            SharedSettings.roundVideoCamera2Enabled.get() :
+-            AppGlobalConfig.getInstance(UserConfig.selectedAccount).roundVideoRecorder2Allowed.get();
++        final boolean useCamera2Impl = SharedSettings.roundVideoCamera2Enabled.get();
+ 
+         return useCamera2Impl
+                 ? new InstantCameraView2(context, delegate, resourcesProvider, isNewDesign)
+diff --git a/TMessagesProj/src/main/java/org/telegram/utils/recorder/round/RoundVideoCameraController.java b/TMessagesProj/src/main/java/org/telegram/utils/recorder/round/RoundVideoCameraController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/utils/recorder/round/RoundVideoCameraController.java
++++ b/TMessagesProj/src/main/java/org/telegram/utils/recorder/round/RoundVideoCameraController.java
+@@ -2100,6 +2100,7 @@ final class RoundVideoCameraController {
+     }
+ 
+     private void prepareWarmSwitchSupport() {
++        if (!xie.fa.gram.InuConfig.ROUND_RECORDER_DUAL_CAMERA.getValue()) warmSwitchDisabled = true;
+         if (warmSwitchDisabled) {
+             return;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/utils/settings/SharedSettings.java b/TMessagesProj/src/main/java/org/telegram/utils/settings/SharedSettings.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/utils/settings/SharedSettings.java
++++ b/TMessagesProj/src/main/java/org/telegram/utils/settings/SharedSettings.java
+@@ -16,7 +16,7 @@ public final class SharedSettings {
+         EnumSetting.of("audio_recorder_noise_suppression", AudioRecordingSession.NoiseSuppression.DISABLED);
+ 
+     public static final BooleanSetting roundVideoCamera2Enabled =
+-        BooleanSetting.of("round_video_camera2_enabled", BuildConfig.DEBUG_VERSION);
++        BooleanSetting.of("round_video_camera2_enabled", true);
+ 
+     public static final EnumSetting<RoundVideoSession.OutputResolution> roundVideoOutputResolution =
+         EnumSetting.of("round_video_output_resolution", RoundVideoSession.OutputResolution.P480);

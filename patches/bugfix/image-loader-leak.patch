@@ -129,17 +129,17 @@ index 0000000..0000000 100644
          private void loadLastFrame(RLottieDrawable lottieDrawable, int w, int h, boolean lastFrame, boolean reaction) {
              Bitmap bitmap;
              Canvas canvas;
-@@ -1796,12 +1811,7 @@ public class ImageLoader {
+@@ -1811,12 +1826,7 @@ public class ImageLoader {
  
-     public static Bitmap getStrippedPhotoBitmap(byte[] photoBytes, String filter) {
-         int len = photoBytes.length - 3 + Bitmaps.header.length + Bitmaps.footer.length;
--        byte[] bytes = bytesLocal.get();
--        byte[] data = bytes != null && bytes.length >= len ? bytes : null;
--        if (data == null) {
--            bytes = data = new byte[len];
--            bytesLocal.set(bytes);
--        }
-+        byte[] data = getByteArray(bytesLocal, len);
-         System.arraycopy(Bitmaps.header, 0, data, 0, Bitmaps.header.length);
-         System.arraycopy(photoBytes, 3, data, Bitmaps.header.length, photoBytes.length - 3);
-         System.arraycopy(Bitmaps.footer, 0, data, Bitmaps.header.length + photoBytes.length - 3, Bitmaps.footer.length);
+         try {
+             int len = photoBytes.length - 3 + Bitmaps.header.length + Bitmaps.footer.length;
+-            byte[] bytes = bytesLocal.get();
+-            byte[] data = bytes != null && bytes.length >= len ? bytes : null;
+-            if (data == null) {
+-                bytes = data = new byte[len];
+-                bytesLocal.set(bytes);
+-            }
++            byte[] data = getByteArray(bytesLocal, len);
+             System.arraycopy(Bitmaps.header, 0, data, 0, Bitmaps.header.length);
+             System.arraycopy(photoBytes, 3, data, Bitmaps.header.length, photoBytes.length - 3);
+             System.arraycopy(Bitmaps.footer, 0, data, Bitmaps.header.length + photoBytes.length - 3, Bitmaps.footer.length);

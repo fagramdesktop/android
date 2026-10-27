@@ -4,105 +4,52 @@ Date: Fri, 17 Jul 2026 21:18:03 +0400
 Subject: system-level transient audio focus when playing videos
 
 ---
- .../telegram/ui/Components/VideoPlayer.java   | 45 +++++++++++++++++--
- .../java/org/telegram/ui/PhotoViewer.java     |  1 +
- 2 files changed, 42 insertions(+), 4 deletions(-)
+ .../main/java/org/telegram/ui/Components/VideoPlayer.java | 8 ++++++++
+ .../src/main/java/org/telegram/ui/PhotoViewer.java        | 1 +
+ 2 files changed, 9 insertions(+)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/VideoPlayer.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/VideoPlayer.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Components/VideoPlayer.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/VideoPlayer.java
-@@ -264,6 +264,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
-             }
-             player = builder.build();
+@@ -1327,6 +1327,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
  
-+
-             player.addAnalyticsListener(this);
-             player.addListener(this);
-             player.addVideoListener(this);
-@@ -1338,6 +1339,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
-         if (shouldPauseOther) {
-             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
-         }
-+        inu_abandonAudioFocus();
-         playerCounter--;
+     public void releasePlayer(boolean async) {
+         activePlayers.remove(playerId);
++        inu_audioFocus.release();
+         if (player != null) {
+             player.release();
+             player = null;
+@@ -1612,6 +1613,12 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
      }
  
-@@ -1451,6 +1453,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
-             audioPlayer.setPlayWhenReady(false);
-         }
  
-+        inu_abandonAudioFocus();
-         if (audioVisualizerDelegate != null) {
-             audioUpdateHandler.removeCallbacksAndMessages(null);
-             audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
-@@ -1613,10 +1616,39 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
- 
- 
++    private final xie.fa.gram.helpers.media.TransientAudioFocus inu_audioFocus = new xie.fa.gram.helpers.media.TransientAudioFocus(this);
++
++    public void inu_setTransientAudioFocus(boolean enabled) {
++        inu_audioFocus.setEnabled(enabled);
++    }
++
      private boolean handleAudioFocus = false;
-+    private boolean inu_hasAudioFocus = false;
-+    private final AudioManager.OnAudioFocusChangeListener inu_audioFocusListener = focusChange -> {
-+        if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-+            AndroidUtilities.runOnUIThread(this::pause);
-+        }
-+    };
-+
-+    private void inu_requestAudioFocus() {
-+        if (handleAudioFocus && !inu_hasAudioFocus && !isMuted()) {
-+            AudioManager am = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
-+            if (am != null) {
-+                int res = am.requestAudioFocus(inu_audioFocusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-+                if (res == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-+                    inu_hasAudioFocus = true;
-+                }
-+            }
-+        }
-+    }
-+
-+    private void inu_abandonAudioFocus() {
-+        if (inu_hasAudioFocus) {
-+            AudioManager am = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
-+            if (am != null) {
-+                am.abandonAudioFocus(inu_audioFocusListener);
-+            }
-+            inu_hasAudioFocus = false;
-+        }
-+    }
-+
      public void handleAudioFocus(boolean handleAudioFocus) {
          this.handleAudioFocus = handleAudioFocus;
--        if (player != null) {
--            player.setAudioAttributes(player.getAudioAttributes(), handleAudioFocus);
-+        if (!handleAudioFocus) {
-+            inu_abandonAudioFocus();
-         }
-     }
- 
-@@ -1655,8 +1687,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
+@@ -1655,6 +1662,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
      @Override
      public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
          maybeReportPlayerState();
--        if (playWhenReady && playbackState == Player.STATE_READY && !isMuted() && shouldPauseOther) {
--            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
-+        if (playWhenReady && playbackState == Player.STATE_READY) {
-+            inu_requestAudioFocus();
-+            if (!isMuted() && shouldPauseOther) {
-+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
-+            }
-+        } else if (!playWhenReady || playbackState == Player.STATE_ENDED || playbackState == Player.STATE_IDLE) {
-+            inu_abandonAudioFocus();
++        inu_audioFocus.onPlayerStateChanged(playWhenReady, playbackState);
+         if (playWhenReady && playbackState == Player.STATE_READY && !isMuted() && shouldPauseOther) {
+             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
          }
-         if (!videoPlayerReady && playbackState == Player.STATE_READY) {
-             videoPlayerReady = true;
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
-@@ -10540,6 +10540,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+@@ -10585,6 +10585,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                      }
                  };
                  videoPlayer.setOnQualityChangeListener(this::updateQualityItems);
-+                videoPlayer.handleAudioFocus(SharedConfig.pauseMusicOnMedia && currentMessageObject != null && currentMessageObject.isVideo());
++                videoPlayer.inu_setTransientAudioFocus(SharedConfig.pauseMusicOnMedia && currentMessageObject != null && currentMessageObject.isVideo());
                  if (PipUtils.checkPermissions(parentActivity) == PipPermissions.PIP_GRANTED_PIP) {
                      pipSource = new PipSource.Builder(parentActivity, this)
                          .setTagPrefix("photo-viewer-" + videoPlayer.playerId)

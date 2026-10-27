@@ -29,7 +29,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.j
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
-@@ -224,6 +224,9 @@ public class ThemeColors {
+@@ -227,6 +227,9 @@ public class ThemeColors {
          defaultColors[key_actionBarDefaultArchivedSearchPlaceholder] = 0xff838c96;
  
          defaultColors[key_chats_onlineCircle] = 0xff4bcb1c;
@@ -43,7 +43,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.j
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
-@@ -22236,6 +22236,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -22298,6 +22298,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                  avatarImage.setImageCoords(avatarX, ny + dp(13) * (1.0f - scale), dp(26) * scale, dp(26) * scale);
                  avatarImage.setAlpha(avatarAlpha);
                  avatarImage.draw(canvas);
@@ -65,7 +65,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java b
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
-@@ -808,8 +808,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+@@ -813,8 +813,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                  user = newUser;
              }
          }
@@ -90,7 +90,7 @@ index 0000000..0000000 100644
      }
  
      private boolean isOnline() {
-@@ -5047,7 +5061,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+@@ -5097,7 +5111,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
              return false;
          }
          if (isDialogCell && currentDialogFolderId == 0 && !stars) {
@@ -99,7 +99,7 @@ index 0000000..0000000 100644
              if (rightFragmentOpenedProgress != 1f && (showTtl || ttlProgress > 0)) {
                  if (timerDrawable == null || (timerDrawable.getTime() != ttlPeriod && ttlPeriod > 0)) {
                      timerDrawable = TimerDrawable.getTtlIconForDialogs(ttlPeriod);
-@@ -5101,9 +5115,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+@@ -5151,9 +5165,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                  canvas.restore();
              }
              if (user != null && !MessagesController.isSupportUser(user) && !user.bot) {
@@ -123,7 +123,7 @@ index 0000000..0000000 100644
                      int top = (int) (storyParams.originalAvatarRect.bottom - dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8));
                      int left;
                      if (LocaleController.isRTL) {
-@@ -5114,9 +5139,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+@@ -5164,9 +5189,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
  
                      Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                      canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
@@ -139,7 +139,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMe
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
-@@ -6427,7 +6427,14 @@ public class ChatActivity extends BaseFragment implements
+@@ -6519,7 +6519,14 @@ public class ChatActivity extends BaseFragment implements
                              canvas.scale(1f - getSideMenuAlpha(), 1f - getSideMenuAlpha(), imageReceiver.getImageX2(), imageReceiver.getImageY2());
                              canvas.translate(dp(24) * getSideMenuAlpha(), 0f);
                          }

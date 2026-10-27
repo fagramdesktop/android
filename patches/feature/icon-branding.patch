@@ -42,7 +42,7 @@ index 0000000..0000000 100644
                  <action android:name="android.intent.action.VIEW" />
                  <category android:name="android.intent.category.BROWSABLE" />
                  <category android:name="android.intent.category.DEFAULT" />
-@@ -355,7 +355,7 @@
+@@ -367,7 +367,7 @@
              android:stateNotNeeded="true"
              android:theme="@style/Theme.TMessages.Transparent"
              android:exported="true">
@@ -51,7 +51,7 @@ index 0000000..0000000 100644
                  <action android:name="android.intent.action.VIEW" />
                  <category android:name="android.intent.category.BROWSABLE" />
                  <category android:name="android.intent.category.DEFAULT" />
-@@ -368,7 +368,7 @@
+@@ -380,7 +380,7 @@
              android:hardwareAccelerated="true"
              android:windowSoftInputMode="adjustPan"
              android:exported="true">
@@ -60,7 +60,7 @@ index 0000000..0000000 100644
                  <action android:name="org.telegram.passport.AUTHORIZE"/>
                  <category android:name="android.intent.category.DEFAULT"/>
              </intent-filter>
-@@ -379,7 +379,7 @@
+@@ -391,7 +391,7 @@
              android:hardwareAccelerated="true"
              android:windowSoftInputMode="adjustPan"
              android:exported="true">
@@ -69,7 +69,7 @@ index 0000000..0000000 100644
                  <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
              </intent-filter>
          </activity>
-@@ -389,7 +389,7 @@
+@@ -401,7 +401,7 @@
              android:hardwareAccelerated="true"
              android:windowSoftInputMode="adjustPan"
              android:exported="true">
@@ -80,7 +80,7 @@ index 0000000..0000000 100644
          </activity>
 diff --git a/TMessagesProj/src/main/ic_launcher-playstore.png b/TMessagesProj/src/main/ic_launcher-playstore.png
 new file mode 100644
-index 0000000000000000000000000000000000000000..72eb2002c4f4bc86d303a998d42225e805ffe08c
+index 0000000..0000000
 GIT binary patch
 literal 11365
 zcmeAS@N?(olHy`uVBq!ia0y~yU}6Aa4mJh`hA$OYelalU=y<v~hE&XXd)K~4=6mUZ
@@ -316,7 +316,7 @@ HcmV?d00001
 
 diff --git a/TMessagesProj/src/main/ic_launcher-web.png b/TMessagesProj/src/main/ic_launcher-web.png
 new file mode 100644
-index 0000000000000000000000000000000000000000..72eb2002c4f4bc86d303a998d42225e805ffe08c
+index 0000000..0000000
 GIT binary patch
 literal 11365
 zcmeAS@N?(olHy`uVBq!ia0y~yU}6Aa4mJh`hA$OYelalU=y<v~hE&XXd)K~4=6mUZ
@@ -554,7 +554,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/NotificationsCon
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java
-@@ -4775,7 +4775,7 @@ public class NotificationsController extends BaseController implements Notificat
+@@ -4842,7 +4842,7 @@ public class NotificationsController extends BaseController implements Notificat
                      .setGroupSummary(true)
                      .setShowWhen(true)
                      .setWhen(((long) lastMessageObject.messageOwner.date) * 1000)
@@ -563,7 +563,7 @@ index 0000000..0000000 100644
  
              long[] vibrationPattern = null;
              Uri sound = null;
-@@ -5779,7 +5779,7 @@ public class NotificationsController extends BaseController implements Notificat
+@@ -5846,7 +5846,7 @@ public class NotificationsController extends BaseController implements Notificat
                      .setContentText(text.toString())
                      .setAutoCancel(true)
                      .setNumber(dialogKey.story ? storyPushMessages.size() : messageObjects.size())
@@ -573,7 +573,7 @@ index 0000000..0000000 100644
                      .setWhen(date)
                      .setShowWhen(true)
 diff --git a/TMessagesProj/src/main/res/mipmap-hdpi/ic_launcher.png b/TMessagesProj/src/main/res/mipmap-hdpi/ic_launcher.png
-index 82f029a1ab16cc7163d2505cfd9c9b12415c37f7..1470a4c8a3a8fdb8a1d84d910d974184b5355411 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 1572
 zcmca4yM<?hay{#BPZ!6KiaBrRSmz5zO0?Zib`@aB*xA9Pk;FA&L4$&$Y;Zup#J3Gi
@@ -689,7 +689,7 @@ zd`YYJkzAjk))O62mGHoGg{VaRVcCfv<h!^fB_`JKsYM+5d5SfpCc=TUA!@^n#Zsb*
 ig<@N07|(n3pSx|Vk+4{2ngas^1B0ilpUXO@geCwQibo9q
 
 diff --git a/TMessagesProj/src/main/res/mipmap-hdpi/ic_launcher_round.png b/TMessagesProj/src/main/res/mipmap-hdpi/ic_launcher_round.png
-index 82f029a1ab16cc7163d2505cfd9c9b12415c37f7..1470a4c8a3a8fdb8a1d84d910d974184b5355411 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 1572
 zcmca4yM<?hay{#BPZ!6KiaBrRSmz5zO0?Zib`@aB*xA9Pk;FA&L4$&$Y;Zup#J3Gi
@@ -805,7 +805,7 @@ zd`YYJkzAjk))O62mGHoGg{VaRVcCfv<h!^fB_`JKsYM+5d5SfpCc=TUA!@^n#Zsb*
 ig<@N07|(n3pSx|Vk+4{2ngas^1B0ilpUXO@geCwQibo9q
 
 diff --git a/TMessagesProj/src/main/res/mipmap-mdpi/ic_launcher.png b/TMessagesProj/src/main/res/mipmap-mdpi/ic_launcher.png
-index e102f5883ecd8e61540c64481114851488d4e5bb..fb42ec398d18ea3fb3b3c925a7fa76536c002d90 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 1072
 zcmdljc!Xnuay<*Tr;B4q#hk0NZhJir5NZ1#yGk_V7;{|5g1O%O27NymY8fS6Sw0^7
@@ -880,7 +880,7 @@ z#+!ZJE!q8*^?6S<{RNU_4oekHsE+@ie6&U(IhXare})p7wNw11eAyTn7#KWV{an^L
 HB{Ts5wr*Oy
 
 diff --git a/TMessagesProj/src/main/res/mipmap-mdpi/ic_launcher_round.png b/TMessagesProj/src/main/res/mipmap-mdpi/ic_launcher_round.png
-index e102f5883ecd8e61540c64481114851488d4e5bb..fb42ec398d18ea3fb3b3c925a7fa76536c002d90 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 1072
 zcmdljc!Xnuay<*Tr;B4q#hk0NZhJir5NZ1#yGk_V7;{|5g1O%O27NymY8fS6Sw0^7
@@ -955,7 +955,7 @@ z#+!ZJE!q8*^?6S<{RNU_4oekHsE+@ie6&U(IhXare})p7wNw11eAyTn7#KWV{an^L
 HB{Ts5wr*Oy
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xhdpi/ic_launcher.png b/TMessagesProj/src/main/res/mipmap-xhdpi/ic_launcher.png
-index efc237c50a3040e4b00e1ac29d655334d8b4c645..7de46e9f84437d99739fcf5f0fd3a04c5afe3f42 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 2099
 zcmcboxnE#{ay<u|r;B4q#hkZuPv>9u5;<lczLb}#<aGAIHZ~Ojg(FYB)+9JaY-T8H
@@ -1114,7 +1114,7 @@ zw*Rw_neOCf>*iLwu*36<egyLy%Y)Z8?_@Oa@%fga^{sx3*%roocJH|v7#J8lUHx3v
 IIVCg!0OZ?m9smFU
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xhdpi/ic_launcher_round.png b/TMessagesProj/src/main/res/mipmap-xhdpi/ic_launcher_round.png
-index efc237c50a3040e4b00e1ac29d655334d8b4c645..7de46e9f84437d99739fcf5f0fd3a04c5afe3f42 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 2099
 zcmcboxnE#{ay<u|r;B4q#hkZuPv>9u5;<lczLb}#<aGAIHZ~Ojg(FYB)+9JaY-T8H
@@ -1273,7 +1273,7 @@ zw*Rw_neOCf>*iLwu*36<egyLy%Y)Z8?_@Oa@%fga^{sx3*%roocJH|v7#J8lUHx3v
 IIVCg!0OZ?m9smFU
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xxhdpi/ic_launcher.png b/TMessagesProj/src/main/res/mipmap-xxhdpi/ic_launcher.png
-index e59e4f0b45d576a41e0591d0c9a8b5f609b5c004..298988c1ab70a601904caee9f6d76f912b4c179f 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 3098
 zcmdnuFi&EFay|D`PZ!6KiaBrR?$4KT6*<1Yn(L0DgP{T!*N3GHEKUgyCL$G=9YvRS
@@ -1510,7 +1510,7 @@ zYB9(!cpdb!b5g)D@1&hxVrQmKd}bsh(&;5A*6DrJ!lC%BR-}f?H0`FJ4IN&h(|KR~
 e<KGnVPu@VMVEPd*TXO~m1_n=8KbLh*2~7a&t@sZB
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xxhdpi/ic_launcher_round.png b/TMessagesProj/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
-index e59e4f0b45d576a41e0591d0c9a8b5f609b5c004..298988c1ab70a601904caee9f6d76f912b4c179f 100644
+index 0000000..0000000 100644
 GIT binary patch
 delta 3098
 zcmdnuFi&EFay|D`PZ!6KiaBrR?$4KT6*<1Yn(L0DgP{T!*N3GHEKUgyCL$G=9YvRS
@@ -1747,7 +1747,7 @@ zYB9(!cpdb!b5g)D@1&hxVrQmKd}bsh(&;5A*6DrJ!lC%BR-}f?H0`FJ4IN&h(|KR~
 e<KGnVPu@VMVEPd*TXO~m1_n=8KbLh*2~7a&t@sZB
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher.png b/TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-index df70e45123daccdce7a0241b4ecced5af59395e3..7a6d65dab5f4394b93c928a7659e7182056c8210 100644
+index 0000000..0000000 100644
 GIT binary patch
 literal 4265
 zcmeAS@N?(olHy`uVBq!ia0y~yU^oE69Bd2>3_*8t*cliE3OrpLLn`LHox3|<CRF;^
@@ -2074,7 +2074,7 @@ z@`g8754DSbow7gA+|<;><jl>-CD6ds$~txF^UfzOB}&z;AEwstV`Y_>5mB(|xL^~|
 r?)Qo7ruP3+CLR?bCv1QH|0iF3b?#I?rp0y)3=9mOu6{1-oD!M<rmC{y
 
 diff --git a/TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png b/TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
-index df70e45123daccdce7a0241b4ecced5af59395e3..7a6d65dab5f4394b93c928a7659e7182056c8210 100644
+index 0000000..0000000 100644
 GIT binary patch
 literal 4265
 zcmeAS@N?(olHy`uVBq!ia0y~yU^oE69Bd2>3_*8t*cliE3OrpLLn`LHox3|<CRF;^

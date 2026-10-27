@@ -1,23 +1,42 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: alina sireneva <alina@tei.su>
-Date: Fri, 8 May 2026 13:52:58 +0200
+From: alina sireneva <alina@tei.pet>
+Date: Mon, 5 Oct 2026 06:09:33 +0400
 Subject: translator-related features
 
 ---
+ .../messenger/MediaDataController.java        |   2 +-
  .../org/telegram/messenger/MessageObject.java |  13 +-
- .../messenger/TranslateController.java        |  10 +-
+ .../messenger/TranslateController.java        |  45 ++--
+ .../telegram/tgnet/ConnectionsManager.java    |   9 +
  .../java/org/telegram/ui/ArticleViewer.java   |  17 +-
  .../telegram/ui/Cells/ChatMessageCell.java    |  42 +++-
  .../ui/Cells/TextSelectionHelper.java         |   1 +
- .../java/org/telegram/ui/ChatActivity.java    | 196 +++---------------
+ .../java/org/telegram/ui/ChatActivity.java    | 202 +++---------------
+ .../ui/Components/TranslateAlert2.java        |  20 +-
+ .../ui/Components/TranslateAlert3.java        |   5 +-
+ .../ui/Components/TranslateButton.java        |   4 +-
+ .../telegram/ui/LanguageSelectActivity.java   |   2 +-
  .../org/telegram/ui/web/WebActionBar.java     |   3 +
- 7 files changed, 92 insertions(+), 190 deletions(-)
+ 13 files changed, 149 insertions(+), 216 deletions(-)
 
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java
+@@ -8094,7 +8094,7 @@ public class MediaDataController extends BaseController {
+         return true;
+     }
+ 
+-    private static boolean richMessageEquals(TL_iv.RichMessage a, TL_iv.RichMessage b) {
++    public static boolean richMessageEquals(TL_iv.RichMessage a, TL_iv.RichMessage b) {
+         if (a == b) {
+             return true;
+         }
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
-@@ -3677,7 +3677,7 @@ public class MessageObject {
+@@ -3679,7 +3679,7 @@ public class MessageObject {
      public boolean updateTranslation(boolean force) {
          boolean replyUpdated = replyMessageObject != null && replyMessageObject != this && replyMessageObject.updateTranslation(force);
          TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
@@ -26,15 +45,15 @@ index 0000000..0000000 100644
          final TLRPC.TL_textWithEntities summarizedText = messageOwner != null && messageOwner.summarizedOpen ? messageOwner.summaryText : null;
          final TLRPC.TL_textWithEntities summarizeTranslatedText = messageOwner != null && messageOwner.summarizedOpen ? messageOwner.translatedSummaryText : null;
          if (
-@@ -3713,6 +3713,7 @@ public class MessageObject {
+@@ -3715,6 +3715,7 @@ public class MessageObject {
              generateCaption();
              return replyUpdated || true;
          } else if (
-+            xie.fa.gram.helpers.translate.TranslateHelper.isManualTranslated(this) && messageOwner != null && (translatedText != null || messageOwner.translatedPoll != null) ||
++            xie.fa.gram.helpers.translate.TranslateHelper.isManualTranslated(this) && messageOwner != null && (translatedText != null || messageOwner.translatedPoll != null || messageOwner.translatedRichMessage != null) ||
              messageOwner != null &&
              TranslateController.isTranslatable(this) &&
              translateController.isTranslatingDialog(getDialogId()) &&
-@@ -7476,7 +7477,7 @@ public class MessageObject {
+@@ -7529,7 +7530,7 @@ public class MessageObject {
          }
          if (linkDescription == null) {
              if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage && getMedia(messageOwner).webpage.description != null) {
@@ -43,7 +62,7 @@ index 0000000..0000000 100644
                  String siteName = getMedia(messageOwner).webpage.site_name;
                  if (siteName != null) {
                      siteName = siteName.toLowerCase();
-@@ -7628,8 +7629,9 @@ public class MessageObject {
+@@ -7681,8 +7682,9 @@ public class MessageObject {
          } else if (messageOwner.translatedText != null && translated) {
              captionSummarized = false;
              captionTranslated = true;
@@ -55,7 +74,7 @@ index 0000000..0000000 100644
          } else {
              captionSummarized = false;
              captionTranslated = false;
-@@ -7977,7 +7979,8 @@ public class MessageObject {
+@@ -8030,7 +8032,8 @@ public class MessageObject {
              if (messageOwner.voiceTranscriptionOpen) {
                  return messageOwner.translatedVoiceTranscription != null ? messageOwner.translatedVoiceTranscription.entities : null;
              } else {
@@ -77,6 +96,42 @@ index 0000000..0000000 100644
  
  import java.util.ArrayList;
  import java.util.Arrays;
+@@ -91,7 +92,7 @@ public class TranslateController extends BaseController {
+     }
+ 
+     public boolean isFeatureAvailable() {
+-        return isChatTranslateEnabled() && UserConfig.getInstance(currentAccount).isPremium();
++        return isChatTranslateEnabled() && xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount);
+     }
+ 
+     public boolean isFeatureAvailable(long dialogId) {
+@@ -100,7 +101,7 @@ public class TranslateController extends BaseController {
+         }
+         final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
+         return (
+-            UserConfig.getInstance(currentAccount).isPremium() ||
++            xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount) ||
+             chat != null && chat.autotranslation
+         );
+     }
+@@ -109,7 +110,7 @@ public class TranslateController extends BaseController {
+     private Boolean contextTranslateEnabled;
+ 
+     public boolean isChatTranslateEnabled() {
+-        if (!getMessagesController().isTranslationsAutoEnabled()) {
++        if (!getMessagesController().isTranslationsAutoEnabled() && !xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
+             return false;
+         }
+         if (chatTranslateEnabled == null) {
+@@ -119,7 +120,7 @@ public class TranslateController extends BaseController {
+     }
+ 
+     public boolean isContextTranslateEnabled() {
+-        if (!getMessagesController().isTranslationsManualEnabled()) {
++        if (!getMessagesController().isTranslationsManualEnabled() && !xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
+             return false;
+         }
+         if (contextTranslateEnabled == null) {
 @@ -769,6 +770,9 @@ public class TranslateController extends BaseController {
          if (messageObject == null || messageObject.messageOwner == null) {
              return;
@@ -96,7 +151,81 @@ index 0000000..0000000 100644
          MessageObject message,
          String language,
          Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> callback
-@@ -1606,7 +1610,7 @@ public class TranslateController extends BaseController {
+@@ -1043,6 +1047,7 @@ public class TranslateController extends BaseController {
+         } else {
+             source.text = message.messageOwner.message;
+             source.entities = message.messageOwner.entities;
++            xie.fa.gram.helpers.translate.TranslationProviderHelper.setSourceLanguage(source, message.messageOwner.originalLanguage);
+         }
+ 
+         PendingTranslation pendingTranslation;
+@@ -1103,7 +1108,7 @@ public class TranslateController extends BaseController {
+                 }
+ 
+                 final String method = getMessagesController().translationsAutoEnabled;
+-                if ("alternative".equals(method) || "system".equals(method)) {
++                if (!xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive() && ("alternative".equals(method) || "system".equals(method))) {
+                     final String toLanguage = pendingTranslation1.language;
+                     for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
+                         final int id = pendingTranslation1.messageIds.get(i);
+@@ -1142,7 +1147,7 @@ public class TranslateController extends BaseController {
+                 }*/
+ 
+                 final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
+-                if (isTranscription) {
++                if (isTranscription || xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
+                     req.flags |= 2;
+                     req.text.addAll(pendingTranslation1.messageTexts);
+                 } else {
+@@ -1486,6 +1491,7 @@ public class TranslateController extends BaseController {
+     private static class PendingRichTranslation {
+         Runnable runnable;
+         ArrayList<Integer> messageIds = new ArrayList<>();
++        ArrayList<MessageObject> messages = new ArrayList<>();
+         ArrayList<Utilities.Callback3<Integer, TL_iv.RichMessage, String>> callbacks = new ArrayList<>();
+         String language;
+ 
+@@ -1494,7 +1500,7 @@ public class TranslateController extends BaseController {
+         int reqId = -1;
+     }
+ 
+-    private void pushRichMessageToTranslate(
++    public void pushRichMessageToTranslate(
+         MessageObject message,
+         String language,
+         Utilities.Callback3<Integer, TL_iv.RichMessage, String> callback
+@@ -1536,6 +1542,7 @@ public class TranslateController extends BaseController {
+             }
+             loadingTranslations.add(message.getId());
+             pendingTranslation.messageIds.add(message.getId());
++            pendingTranslation.messages.add(message);
+             FileLog.d("pending translation +" + message.getId() + " rich message");
+             pendingTranslation.callbacks.add(callback);
+             pendingTranslation.language = language;
+@@ -1551,11 +1558,17 @@ public class TranslateController extends BaseController {
+                     }
+                 }
+ 
+-                final TLRPC.TL_messages_translateRichMessage req = new TLRPC.TL_messages_translateRichMessage();
+-                req.flags |= TLObject.FLAG_0;
+-                req.peer = getMessagesController().getInputPeer(dialogId);
+-                req.id = pendingTranslation1.messageIds;
+-                req.to_lang = normalizeLanguage(pendingTranslation1.language);
++                final TLObject req;
++                if (xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
++                    req = xie.fa.gram.helpers.translate.TranslationProviderHelper.createRichRequest(pendingTranslation1.messages, normalizeLanguage(pendingTranslation1.language));
++                } else {
++                    final TLRPC.TL_messages_translateRichMessage serverReq = new TLRPC.TL_messages_translateRichMessage();
++                    serverReq.flags |= TLObject.FLAG_0;
++                    serverReq.peer = getMessagesController().getInputPeer(dialogId);
++                    serverReq.id = pendingTranslation1.messageIds;
++                    serverReq.to_lang = normalizeLanguage(pendingTranslation1.language);
++                    req = serverReq;
++                }
+ 
+                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                     final ArrayList<Integer> ids;
+@@ -1606,7 +1619,7 @@ public class TranslateController extends BaseController {
                  (messageObject.messageOwner.voiceTranscriptionOpen && messageObject.messageOwner.voiceTranscriptionFinal ?
                      loadingTranscriptionTranslations : loadingTranslations
                  ).contains(messageObject.getId()) &&
@@ -105,7 +234,7 @@ index 0000000..0000000 100644
              );
          }
      }
-@@ -1615,7 +1619,7 @@ public class TranslateController extends BaseController {
+@@ -1615,7 +1628,7 @@ public class TranslateController extends BaseController {
          if (messageObject == null) {
              return false;
          }
@@ -114,6 +243,49 @@ index 0000000..0000000 100644
              return false;
          }
          final boolean isTranscription = messageObject.messageOwner != null && messageObject.messageOwner.voiceTranscriptionOpen && messageObject.messageOwner.voiceTranscriptionFinal;
+@@ -1940,6 +1953,7 @@ public class TranslateController extends BaseController {
+         final TLRPC.TL_textWithEntities text = new TLRPC.TL_textWithEntities();
+         text.text = storyItem.caption;
+         text.entities = storyItem.entities;
++        xie.fa.gram.helpers.translate.TranslationProviderHelper.setSourceLanguage(text, storyItem.detectedLng);
+         req.text.add(text);
+         req.to_lang = normalizeLanguage(toLang);
+         getConnectionsManager().sendRequest(req, (res, err) -> {
+@@ -2077,6 +2091,7 @@ public class TranslateController extends BaseController {
+         if (text.entities == null) {
+             text.entities = new ArrayList<>();
+         }
++        xie.fa.gram.helpers.translate.TranslationProviderHelper.setSourceLanguage(text, messageObject.messageOwner.originalLanguage);
+         req.text.add(text);
+         req.to_lang = normalizeLanguage(toLang);
+         final long start = System.currentTimeMillis();
+diff --git a/TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java b/TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java
++++ b/TMessagesProj/src/main/java/org/telegram/tgnet/ConnectionsManager.java
+@@ -390,6 +390,9 @@ public class ConnectionsManager extends BaseController {
+     }
+ 
+     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
++        if (xie.fa.gram.helpers.translate.TranslationProviderHelper.maybeTranslate(currentAccount, requestToken, object, onComplete, onCompleteTimestamp)) {
++            return;
++        }
+         if (BuildVars.LOGS_ENABLED) {
+             FileLog.d("send request " + object + " with token = " + requestToken);
+         }
+@@ -585,6 +588,12 @@ public class ConnectionsManager extends BaseController {
+ 
+     public void cancelRequest(int token, boolean notifyServer, Runnable onCancelled) {
+         Utilities.stageQueue.postRunnable(() -> {
++            if (xie.fa.gram.helpers.translate.TranslationProviderHelper.cancelRequest(currentAccount, token)) {
++                if (onCancelled != null) {
++                    onCancelled.run();
++                }
++                return;
++            }
+             if (onCancelled != null) {
+                 listenCancel(token, () -> {
+                     Utilities.stageQueue.postRunnable(onCancelled);
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ArticleViewer.java b/TMessagesProj/src/main/java/org/telegram/ui/ArticleViewer.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ArticleViewer.java
@@ -188,7 +360,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.j
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
-@@ -1068,6 +1068,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -1069,6 +1069,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
      public int textX;
      private int unmovedTextX;
      private int linkPreviewY;
@@ -197,7 +369,7 @@ index 0000000..0000000 100644
      private int factCheckY;
      public int textY;
      public int totalHeight;
-@@ -1821,6 +1823,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -1822,6 +1824,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
      private int lastDeleteDate;
      private int lastViewsCount;
      private int lastRepliesCount;
@@ -205,7 +377,7 @@ index 0000000..0000000 100644
      private float selectedBackgroundProgress;
      private boolean lastTranslated;
  
-@@ -6788,7 +6791,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -6789,7 +6792,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                  lastPostAuthor != messageObject.messageOwner.post_author ||
                  wasPinned != isPinned ||
                  newReply != lastReplyMessage ||
@@ -215,7 +387,7 @@ index 0000000..0000000 100644
          boolean groupChanged = groupedMessages != currentMessagesGroup;
          boolean pollChanged = false;
  
-@@ -6930,6 +6934,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -6931,6 +6935,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
              linkPreviewY = 0;
              factCheckY = 0;
              lastTranslated = messageObject.translated;
@@ -223,7 +395,7 @@ index 0000000..0000000 100644
              lastSendState = messageObject.messageOwner.send_state;
              lastDeleteDate = messageObject.messageOwner.destroyTime;
              lastViewsCount = messageObject.messageOwner.views;
-@@ -7896,7 +7901,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -7897,7 +7902,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                          isSmallImage = false;
                          linkPreviewAbove = currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.invert_media;
                      } else if (hasLinkPreview) {
@@ -232,7 +404,7 @@ index 0000000..0000000 100644
                          site_name = webPage.site_name;
                          title = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.title : null;
                          if (instantViewTypeIsGiftAuction != null) {
-@@ -12450,6 +12455,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -12451,6 +12456,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
          }
      }
  
@@ -260,7 +432,7 @@ index 0000000..0000000 100644
      @Override
      public void invalidate() {
          if (currentMessageObject == null) {
-@@ -15538,7 +15564,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -15569,7 +15595,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
              restore = true;
  
              AndroidUtilities.rectTmp.set(linkX, linkPreviewY - dp(6), linkX + width, linkPreviewY + linkPreviewHeight + (drawInstantButtonInside && drawInstantView ? dp(42) : 0));
@@ -269,7 +441,7 @@ index 0000000..0000000 100644
              float rad = (float) Math.floor(SharedConfig.bubbleRadius / (currentMessageObject.isSponsored() ? 2f : 3f));
              linkLine
                  .offsetEmoji(0, drawPhotoImageBefore ? (1f - isSmallImage()) * (dp(18) + photoImage.getImageHeight() + (siteNameLayout != null ? siteNameLayout.getLineBottom(siteNameLayout.getLineCount() - 1) : 0)) : 0)
-@@ -15913,7 +15939,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -15944,7 +15970,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                  photoImage.setImageY(smallImageStartY);
              } else {
                  photoImage.setImageX(linkX + (hasInvoicePreview ? -dp(6.3f) : dp(10)));
@@ -278,7 +450,7 @@ index 0000000..0000000 100644
              }
              if (transitionParams != null && transitionParams.animateSmallImage) {
                  if (!isSmallImage && documentAttachType != DOCUMENT_ATTACH_TYPE_DOCUMENT) {
-@@ -16804,7 +16830,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -16835,7 +16861,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
  
          final TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
          final boolean translating = translateController.isTranslating(currentMessageObject);
@@ -287,16 +459,16 @@ index 0000000..0000000 100644
          final boolean shouldSummarize = currentMessageObject != null && currentMessageObject.messageOwner.summarizedOpen;
          final boolean isFinal = shouldTranslate == (currentMessageObject != null && currentMessageObject.translated) && shouldSummarize == (currentMessageObject != null && currentMessageObject.summarized);
          if (origin == !isFinal) {
-@@ -18485,7 +18511,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
-         } else if (edited) {
-             timeString = AppGlobalConfig.getInstance(currentAccount).messagePrimaryEditedDate.get() ?
-                 LocaleController.formatPmEditedDate(currentMessagesGroup != null ? currentMessagesGroup.getMaxEditDate() : messageObject.messageOwner.edit_date) :
--                (getString(R.string.EditedMessage) + " " + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000));
-+                ((xie.fa.gram.InuConfig.COMPACT_EDITED.getValue() ? "" : getString(R.string.EditedMessage) + " ") + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000));
+@@ -18521,7 +18547,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                 }
+                 timeString = LocaleController.formatPmEditedDate(editDate);
+             } else {
+-                timeString = (getString(R.string.EditedMessage) + " " + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000));
++                timeString = ((xie.fa.gram.InuConfig.COMPACT_EDITED.getValue() ? "" : getString(R.string.EditedMessage) + " ") + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000));
+             }
          } else if (currentMessageObject.isSaved && currentMessageObject.messageOwner.fwd_from != null && (currentMessageObject.messageOwner.fwd_from.date != 0 || currentMessageObject.messageOwner.fwd_from.saved_date != 0)) {
              int date = currentMessageObject.messageOwner.fwd_from.saved_date;
-             if (date == 0) {
-@@ -18538,7 +18564,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -18575,7 +18601,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                  currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
              }
          }
@@ -306,7 +478,7 @@ index 0000000..0000000 100644
          if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {
              timeWidth -= dp(8);
          }
-@@ -18636,6 +18663,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+@@ -18673,6 +18700,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
          } else {
              signWidth = 0;
          }
@@ -330,7 +502,16 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMe
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
-@@ -11337,7 +11337,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -9946,7 +9946,7 @@ public class ChatActivity extends BaseFragment implements
+         translateButton = new TranslateButton(getContext(), this, themeDelegate) {
+             @Override
+             protected void onButtonClick() {
+-                if (getUserConfig().isPremium() || currentChat != null && currentChat.autotranslation) {
++                if (xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount) || currentChat != null && currentChat.autotranslation) {
+                     getMessagesController().getTranslateController().toggleTranslatingDialog(getDialogId());
+                 } else {
+                     MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dialog_show_translate_count" + getDialogId(), 14).commit();
+@@ -11408,7 +11408,7 @@ public class ChatActivity extends BaseFragment implements
          if (translateItem == null) {
              return;
          }
@@ -339,7 +520,7 @@ index 0000000..0000000 100644
      }
  
      private Animator infoTopViewAnimator;
-@@ -24851,6 +24851,14 @@ public class ChatActivity extends BaseFragment implements
+@@ -25139,6 +25139,14 @@ public class ChatActivity extends BaseFragment implements
      }
  
      private void saveGeneralScroll() {
@@ -354,12 +535,21 @@ index 0000000..0000000 100644
          int scrollByCellHeight = 0;
          ChatMessageCell scrollByCell = null;
          for (int i = 0; i < chatListView.getChildCount(); ++i) {
-@@ -24905,16 +24913,19 @@ public class ChatActivity extends BaseFragment implements
+@@ -25171,6 +25179,7 @@ public class ChatActivity extends BaseFragment implements
+         for (MessageObject pinnedMessageObject : pinnedMessageObjects.values()) {
+             if (pinnedMessageObject != null && pinnedMessageObject.getId() == messageObject.getId()) {
+                 pinnedMessageObject.messageOwner.translatedText = messageObject.messageOwner.translatedText;
++                pinnedMessageObject.messageOwner.translatedRichMessage = messageObject.messageOwner.translatedRichMessage;
+                 pinnedMessageObject.messageOwner.translatedToLanguage = messageObject.messageOwner.translatedToLanguage;
+                 if (pinnedMessageObject.updateTranslation(true)) {
+                     updatePinnedMessageView(true, 1);
+@@ -25193,16 +25202,20 @@ public class ChatActivity extends BaseFragment implements
                  boolean update = false;
                  if (cellMessageObject.getId() == messageObject.getId()) {
                      cellMessageObject.messageOwner.translatedText = messageObject.messageOwner.translatedText;
 +                    cellMessageObject.messageOwner.translatedVoiceTranscription = messageObject.messageOwner.translatedVoiceTranscription;
 +                    cellMessageObject.messageOwner.translatedPoll = messageObject.messageOwner.translatedPoll;
++                    cellMessageObject.messageOwner.translatedRichMessage = messageObject.messageOwner.translatedRichMessage;
                      cellMessageObject.messageOwner.translatedToLanguage = messageObject.messageOwner.translatedToLanguage;
 +                    cellMessageObject.messageOwner.originalLanguage = messageObject.messageOwner.originalLanguage;
                      cellMessageObject.messageOwner.summaryText = messageObject.messageOwner.summaryText;
@@ -380,7 +570,7 @@ index 0000000..0000000 100644
                      }
                  }
                  MessageObject.GroupedMessages group = groupedMessagesMap.get(messageObject.getGroupId());
-@@ -24943,6 +24954,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -25231,6 +25244,7 @@ public class ChatActivity extends BaseFragment implements
                          saveGeneralScroll();
                      }
                      cellMessageObject.forceUpdate = true;
@@ -388,7 +578,7 @@ index 0000000..0000000 100644
                      cell.setMessageObject(cellMessageObject, cell.getCurrentMessagesGroup(), cell.isPinnedBottom(), cell.isPinnedTop(), cell.isFirstInChat(), cell.isLastInChatList());
                      if (group != null) {
                          if (chatListItemAnimator != null) {
-@@ -26841,6 +26853,8 @@ public class ChatActivity extends BaseFragment implements
+@@ -27133,6 +27147,8 @@ public class ChatActivity extends BaseFragment implements
                  a--;
              }
  
@@ -397,7 +587,16 @@ index 0000000..0000000 100644
              addToPolls(messageObject, old);
              if (old.richCheckboxEcho && messageObject.type == MessageObject.TYPE_ARTICLE && old.richLayout != null && messageObject.messageOwner != null) {
                  messageObject.richLayout = old.richLayout;
-@@ -32104,169 +32118,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -29598,7 +29614,7 @@ public class ChatActivity extends BaseFragment implements
+ 
+         boolean showRestartTopic = !isInPreviewMode() && forumTopic != null && forumTopic.closed && !forumTopic.hidden && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic);
+         boolean showTranslate = (
+-            getUserConfig().isPremium() || currentChat != null && currentChat.autotranslation ?
++            xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount) || currentChat != null && currentChat.autotranslation ?
+                 getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) && !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) :
+                 !getMessagesController().premiumFeaturesBlocked() && preferences.getInt("dialog_show_translate_count" + did, 5) <= 0
+         ) || DEBUG_TOP_PANELS;
+@@ -32400,169 +32416,7 @@ public class ChatActivity extends BaseFragment implements
                      });
                      cell.setOnLongClickListener(v1 -> ChatHelper.onMenuOptionLongClick(this, popupLayout, cell, options, i, selectedObject, selectedObjectGroup));
                      if (option == OPTION_TRANSLATE) {
@@ -568,7 +767,7 @@ index 0000000..0000000 100644
                      }
                  }
                  if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.video_processing_pending) {
-@@ -46129,7 +45981,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -46532,7 +46386,7 @@ public class ChatActivity extends BaseFragment implements
                      options.add(OPTION_PIN);
                      icons.add(R.drawable.msg_pin);
                  }
@@ -577,7 +776,7 @@ index 0000000..0000000 100644
                      items.add(LocaleController.getString(R.string.TranslateMessage));
                      options.add(OPTION_TRANSLATE);
                      icons.add(R.drawable.msg_translate);
-@@ -46477,7 +46329,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -46880,7 +46734,7 @@ public class ChatActivity extends BaseFragment implements
                      options.add(OPTION_PIN);
                      icons.add(R.drawable.msg_pin);
                  }
@@ -586,6 +785,119 @@ index 0000000..0000000 100644
                      items.add(LocaleController.getString(R.string.TranslateMessage));
                      options.add(OPTION_TRANSLATE);
                      icons.add(R.drawable.msg_translate);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
+@@ -65,6 +65,7 @@ import org.telegram.messenger.TranslateController;
+ import org.telegram.messenger.Utilities;
+ import org.telegram.messenger.XiaomiUtilities;
+ import org.telegram.tgnet.ConnectionsManager;
++import org.telegram.tgnet.TLObject;
+ import org.telegram.tgnet.TLRPC;
+ import org.telegram.tgnet.tl.TL_iv;
+ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+@@ -331,11 +332,17 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
+         }
+ 
+         if (reqRichMessage != null && reqPeer != null) {
+-            TLRPC.TL_messages_translateRichMessage req = new TLRPC.TL_messages_translateRichMessage();
+-            req.flags |= 1;
+-            req.peer = reqPeer;
+-            req.id.add(reqMessageId);
+-            req.to_lang = normalizeLanguage(lang);
++            final TLObject req;
++            if (xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
++                req = xie.fa.gram.helpers.translate.TranslationProviderHelper.createRichRequest(reqRichMessage, fromLanguage, normalizeLanguage(lang));
++            } else {
++                TLRPC.TL_messages_translateRichMessage serverReq = new TLRPC.TL_messages_translateRichMessage();
++                serverReq.flags |= 1;
++                serverReq.peer = reqPeer;
++                serverReq.id.add(reqMessageId);
++                serverReq.to_lang = normalizeLanguage(lang);
++                req = serverReq;
++            }
+             reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+                 AndroidUtilities.runOnUIThread(() -> {
+                     reqId = null;
+@@ -398,12 +405,13 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
+         }
+ 
+         TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
+-        if (reqPeer != null) {
++        if (reqPeer != null && !xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
+             req.flags |= 1;
+             req.peer = reqPeer;
+             req.id.add(reqMessageId);
+         } else {
+             req.flags |= 2;
++            xie.fa.gram.helpers.translate.TranslationProviderHelper.setSourceLanguage(textWithEntities, fromLanguage);
+             req.text.add(textWithEntities);
+         }
+ //        if (fromLanguage != null && !"und".equals(fromLanguage)) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
+@@ -114,7 +114,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
+                     AndroidUtilities.addToClipboard(translated);
+                 }
+             } else if (item.id == 2) {
+-                if (!UserConfig.getInstance(currentAccount).isPremium()) {
++                if (!xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount)) {
+                     final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                     if (fragment == null) return;
+                     new PremiumFeatureBottomSheet(getContext(), PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, true, resourcesProvider)
+@@ -419,12 +419,13 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
+             final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
+             req.to_lang = to_lang;
+ 
+-            if (dialogId != 0 && messageId != 0) {
++            if (dialogId != 0 && messageId != 0 && !xie.fa.gram.helpers.translate.TranslationProviderHelper.isActive()) {
+                 req.flags |= TLObject.FLAG_0;
+                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+                 req.id.add(messageId);
+             } else {
+                 req.flags |= TLObject.FLAG_1;
++                xie.fa.gram.helpers.translate.TranslationProviderHelper.setSourceLanguage(fromText, from_lang);
+                 req.text.add(fromText);
+             }
+ 
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateButton.java
+@@ -114,7 +114,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
+         menuView.setImageResource(R.drawable.msg_mini_customize);
+         menuView.setOnClickListener(e -> {
+             final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+-            if (UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation) {
++            if (xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount) || chat != null && chat.autotranslation) {
+                 onMenuClick();
+             } else {
+                 onCloseClick();
+@@ -414,7 +414,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
+             }
+             textView.setText(TextUtils.concat(translateIcon, " ", text));
+         }
+-        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation ? R.drawable.msg_mini_customize : R.drawable.msg_close);
++        menuView.setImageResource(xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount) || chat != null && chat.autotranslation ? R.drawable.msg_mini_customize : R.drawable.msg_close);
+     }
+ 
+     public static void showCocoonAlert(Context context, Theme.ResourcesProvider resourcesProvider) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/LanguageSelectActivity.java
+@@ -220,7 +220,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
+                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateSearchSettings);
+                     } else if (position == autoTranslationPosition) {
+                         boolean value = !getChatValue();
+-                        if (value && !getUserConfig().isPremium()) {
++                        if (value && !xie.fa.gram.helpers.translate.TranslationProviderHelper.canTranslateChats(currentAccount)) {
+                             showDialog(new PremiumFeatureBottomSheet(LanguageSelectActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, false));
+                             return;
+                         }
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/web/WebActionBar.java b/TMessagesProj/src/main/java/org/telegram/ui/web/WebActionBar.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/web/WebActionBar.java

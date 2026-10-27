@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: alina sireneva <alina@tei.pet>
+Date: Sat, 10 Oct 2026 15:32:11 +0200
+Subject: expose code highlight service and syntax font span
+
+---
+ .../org/telegram/utils/code/highlight/CodeHighlighting.java | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/utils/code/highlight/CodeHighlighting.java b/TMessagesProj/src/main/java/org/telegram/utils/code/highlight/CodeHighlighting.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/utils/code/highlight/CodeHighlighting.java
++++ b/TMessagesProj/src/main/java/org/telegram/utils/code/highlight/CodeHighlighting.java
+@@ -234,7 +234,7 @@ public class CodeHighlighting {
+         }
+     }
+ 
+-    private static final class SyntaxFontSpan extends MetricAffectingSpan {
++    public static final class SyntaxFontSpan extends MetricAffectingSpan {
+         private static final Typeface[] FONTS = {
+             Typeface.MONOSPACE,
+             Typeface.create(Typeface.MONOSPACE, Typeface.BOLD),
+@@ -244,7 +244,7 @@ public class CodeHighlighting {
+         private final int style;
+         private final int flags;
+ 
+-        SyntaxFontSpan(int flags) {
++        public SyntaxFontSpan(int flags) {
+             this.flags = flags;
+             style =
+                     ((flags & PrismaTokenStyles.BOLD) != 0 ? 1 : 0)
+@@ -262,7 +262,7 @@ public class CodeHighlighting {
+         }
+     }
+ 
+-    private static final PrismaHighlightingService SERVICE =
++    public static final PrismaHighlightingService SERVICE =
+             new PrismaHighlightingService(
+                     () -> {
+                         byte[] grammars;

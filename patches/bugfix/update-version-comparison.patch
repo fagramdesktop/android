@@ -25,7 +25,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/SharedConfig.jav
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/SharedConfig.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/SharedConfig.java
-@@ -581,7 +581,13 @@ public class SharedConfig {
+@@ -584,7 +584,13 @@ public class SharedConfig {
                      if (updateVersionString == null) {
                          updateVersionString = BuildVars.BUILD_VERSION_STRING;
                      }
@@ -40,7 +40,7 @@ index 0000000..0000000 100644
                          pendingAppUpdate = null;
                          AndroidUtilities.runOnUIThread(SharedConfig::saveConfig);
                      }
-@@ -816,11 +822,26 @@ public class SharedConfig {
+@@ -819,11 +825,26 @@ public class SharedConfig {
  
      // returns a >= b
      public static boolean versionBiggerOrEqual(String a, String b) {

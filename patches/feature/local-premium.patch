@@ -13,7 +13,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesControll
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
-@@ -119,6 +119,9 @@ import org.telegram.ui.bots.WebViewRequestProps;
+@@ -121,6 +121,9 @@ import org.telegram.ui.bots.WebViewRequestProps;
  import org.telegram.ui.community.CommunityChatType;
  import org.telegram.ui.community.CommunityUtils;
  
@@ -23,7 +23,7 @@ index 0000000..0000000 100644
  import java.io.File;
  import java.util.ArrayList;
  import java.util.Arrays;
-@@ -741,6 +744,9 @@ public class MessagesController extends BaseController implements NotificationCe
+@@ -745,6 +748,9 @@ public class MessagesController extends BaseController implements NotificationCe
          return premiumLocked && !getUserConfig().isPremium();
      }
      public boolean premiumPurchaseBlocked() {
@@ -33,7 +33,7 @@ index 0000000..0000000 100644
          return premiumLocked;
      }
  
-@@ -944,6 +950,9 @@ public class MessagesController extends BaseController implements NotificationCe
+@@ -937,6 +943,9 @@ public class MessagesController extends BaseController implements NotificationCe
      }
  
      public boolean isPremiumUser(TLRPC.User currentUser) {

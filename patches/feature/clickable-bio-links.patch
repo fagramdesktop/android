@@ -11,7 +11,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java b/
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
-@@ -13813,6 +13813,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -13929,6 +13929,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                      if (position == userInfoRow) {
                          TLRPC.User user = userInfo.user != null ? userInfo.user : getMessagesController().getUser(userInfo.id);
                          boolean addlinks = isBot || (user != null && user.premium && userInfo.about != null);
@@ -21,7 +21,7 @@ index 0000000..0000000 100644
                          aboutLinkCell.setTextAndValue(userInfo.about, LocaleController.getString(R.string.UserBio), addlinks);
                      } else if (position == channelInfoRow) {
                          String text = chatInfo.about;
-@@ -13824,7 +13827,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -13940,7 +13943,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                          String value;
                          if (userInfo == null || !TextUtils.isEmpty(userInfo.about)) {
                              value = userInfo == null ? LocaleController.getString(R.string.Loading) : userInfo.about;

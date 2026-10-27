@@ -1,23 +1,25 @@
-# FAgram features
+# Inugram features
 
 > non-exhaustive list of what this fork adds, tweaks or fixes vs stock telegram android.
 > keep this updated as patches are added/removed.
 
-most things are toggleable in `Settings → FAgram`, with sensible opinionated defaults.
+most things are toggleable in `Settings → Inugram`, with sensible opinionated defaults.
 
-🐶 - FAgram-exclusive (as far as i know, as of writing)
+🐶 - Inugram-exclusive (as far as i know, as of writing)
 
 ## appearance & general
 
 - navigation drawer, like in older Telegram versions; can be used alongside or instead of the bottom tabs
   - 🐶 an option to (ab)use predictive back to open the drawer
+  - customizable drawer items
 - monet (material you) theme support - *based on [NagramX](https://github.com/risin42/NagramX)*, 🐶 improved. plus a quick switcher in appearance settings (light/dark/amoled/auto)
 - 🐶 classic ui mode for folders bar, shared media tabs, global search and chat elements (reverts the >12.6 "liquid glass" look)
-- icon replacement (solar pack by [480 Design](https://t.me/Design480) - *ported from [NagramX](https://github.com/risin42/NagramX)*; vkui pack by [VK](https://github.com/VKCOM/icons) - *ported from [Catogram](https://github.com/Catogram/Catogram)*)
-- notification icon: Telegram (default) or FAgram (monochrome status bar icon)
-- 🐶 adaptive launcher icon with dedicated Android 13+ Material You themed silhouette, full-color foreground shadow, and modernized raster/store mipmaps
+- icon packs: stackable `.icons` packs (svg/png/webp icons and `lottie:` animations + metadata.json), installed from a file or by opening them in a chat; bundled solar pack by [@r4in80w](https://t.me/r4in80w) - *ported from [NagramX](https://github.com/risin42/NagramX)*
+- notification icon: Telegram (default) or Inugram
+- 🐶 animated splash screen follows the selected app icon and Monet theme (Android 12+)
 - show seconds in timestamps
 - override Telegram's detected device performance class
+- 🐶 disable animated avatars in chats independently of video autoplay from Power Saving → Effects in chats
 - 🐶 customizable animation speed multiplier (incl. instant)
 - estimated registration date in profile - *ported & datapoints from [NagramX](https://github.com/risin42/NagramX)*
 - join/creation date in group & channel profiles
@@ -34,13 +36,13 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - 🐶 reduce menu motion: skip context menu stagger and reaction bar slide-in/scale animations
 - material 3:
   - switches
+  - sliders
   - fabs
   - predictive back
   - navigation animation
   - lists & sections
   - avatars (tonal on-container initials instead of white)
   - profile action buttons
-  - folder bar: top (stock) or bottom integrated with M3 bottom tabs (only with M3 enabled)
 - 🐶 toggle to replace profile photo bottom blur with a plain gradient fade
 - disable number rounding
 - export/import settings to/from json file
@@ -49,7 +51,6 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - MapLibre-based map view
 - customizable map preview provider
 - in-app updater - *ported from [Nekogram](https://github.com/Nekogram/Nekogram)*
-- 🐶 redesigned About page matching FAgram Desktop (layered Material shape emblem with theme-adaptive colors and interactive ripple, and desktop-style About card)
 - 🐶 crash report sheet: catches uncaught exceptions, offers to share the log on next launch, posts a tap-to-restart notification
 - keep search query after picking a result in peer selection screens
 
@@ -59,17 +60,13 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - bottom tabs: material design 3 style with a pill indicator behind the selected icon
 - double-tap account tab to switch to next account
 - long-tap "chats" tab to pick folder from menu
-- folder display modes: titles / titles+icons / icons-only (supports custom icon packs: Solar & VKUI)
-- built-in local folders: device-only chat folders that don't count against Telegram's folder limits (Private Chats, Groups, Supergroups, Basic Groups, Channels, Bots, Admin, Unread, Unmuted) - *ported from [NagramXF](https://github.com/Keeperorowner/NagramXF)*
-  - allow reordering "All Chats" tab to any slot without Telegram Premium when local folders are active
-- 🐶 unlimited local pinned chats: pin chats beyond the server limit on this device (Main chat list, Archive, and real server-synced folders); stored locally, seamlessly interleaved with server pins in a unified visual order with drag-and-drop reordering
-- 🐶 always show downloads button: keep the downloads icon visible in the main action bar beside the overflow menu even when no downloads are active
+- folder display modes: titles / titles+icons / icons-only
 - folder unread counter modes: hide / regular / exclude muted / 🐶 exclude muted non-dms
 - hide "all chats" folder tab
-- custom title text: FAgram / @username / first name / "Chats"
+- custom title text: Inugram / @username / first name / "Chats"
 - 🐶 dialogs fab customization: main + secondary actions, hide-on-scroll, left-side
 - 🐶 "create as supergroup" toggle in group creation
-- 🐶 deeplink / username quick-open from global search
+- 🐶 deeplink / username / cached peer ID quick-open from global search
 - mutual contact icon in contacts list
 - customizable dialogs list pull-down action: reveal archive (stock), open archive directly (🐶 done right, without revealing the cell), open saved messages, open search, or disabled entirely. when the pull-down no longer leads to the archive, the archive row is hidden from the list and an "Archived Chats" entry appears in the drawer/overflow menu instead
 - interactive chat preview (long-tap avatar): tappable bubbles, no tap-to-expand
@@ -85,7 +82,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - minimize sticker creator button in recent stickers
 - sticker time overlay modes: show / 🐶 hide time / 🐶 hide on incoming / hide completely
 - "Refresh" in the sticker/emoji pack menu
-- compact edited indicator: pencil icon instead of the "edited" label
+- edited-message display: compact pencil indicator and configurable primary timestamp
 - toggleable message bubble tails
 - 🐶 jump-to-discussion button from comments
 - jump-to-beginning button in calendar popup - *ported from [Nekogram](https://github.com/Nekogram/Nekogram)*
@@ -97,7 +94,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - hide channel, group preview (🐶) and replies (🐶) bottom bar (mute/join/etc)
 - send message to discussion group without joining
 - 🐶 member count on private invite sheets (instead of "private group/channel"; like tdesktop)
-- 🐶 search: media-type filter + "show only matches"
+- 🐶 search: media-type filters, combined sender + media filtering, and "show only matches"
 - tapping a hashtag in a public channel defaults to the "This Chat" tab
 - 🐶 "from user" picker in search also finds users not in chat by name, username, or cached user ID (like tdesktop)
 - static pinned reactions in the reaction bar
@@ -106,12 +103,14 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - double-tap message actions (separate for incoming/outgoing/editable channel posts), 🐶 customizable double-tap delay
 - hide keyboard on scroll
 - always show go-to-bottom button (don't hide on scroll-down)
-- web preview: replacements (e.g. twitter→fixupx)
+- web preview replacements (e.g. twitter→fixupx), optionally applied when pasting links
 - 🐶 strip tracking params (utm_*, fbclid, si, erid, …) from links before opening and/or when pasting — *rules from AdGuard URL Tracking filter*
+- 🐶 resolve trackable share redirects (TikTok, SoundCloud and more) when pasting/opening
 - 🐶 web preview refetch from menu
 - 🐶 disable web preview limit on twitter-like websites
 - 🐶 spoiler web previews: when the preview-generating link is under a spoiler, cover the whole preview card too
 - tap a web preview photo to open it in the photo viewer
+- 🐶 tap the photo/video in the bot "What can this bot do?" card to open it in the photo viewer
 - 🐶 "Preview" in the link long-tap menu: peek a t.me message link (public or private) as a chat preview at that exact message
 - message details from menu (+ show json)
 - per-message statistics from message menu
@@ -132,6 +131,8 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - show id in profile, show user json
 - long-tap the name in profile to copy it
 - long-tap a selected user chip (privacy exceptions, add members, etc.) to open their profile (channels open the chat instead)
+- "Open Profile" in the join request preview menu
+- long-tap the join requests top bar to open the full requests page
 - "Stop" button in a bot profile stops (blocks) the bot instead of offering to delete the chat
 - 🐶 drag the pinned-music sheet by its header to scroll/expand the playlist
 - long-tap inline callback button to copy text or callback data
@@ -139,6 +140,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - 🐶 lift 100-message selection cap (forwards/saves/deletes are auto-chunked)
 - 🐶 two-finger swipe over messages to select/deselect them
 - more bulk actions in message selection mode (save, translate, gallery, pin/unpin, no-quote forward)
+- three-dot menu in shared media selection mode (save, gallery, no-quote forward, plugin actions)
 - in-place message translation, with optional web preview translation, original-text appending and on-device source-language auto-detection (hides Translate when already in your language)
 - instant view pages translator
 - show original time/date in the forwarded header, with regular, icon-only label, and compact one-line modes
@@ -148,6 +150,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - 🐶 restrict/ban menu items the avatar long-tap menu
 - hide messages from blocked users: with a spoiler or completely - *partially ported from [Nekogram](https://github.com/Nekogram/Nekogram)*
   - also hide messages from a custom list of users/channels without blocking them (via settings picker or profile menu)
+  - optionally also hide replies to those users
 
 ## message input / formatting
 
@@ -164,6 +167,8 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
   - keep zoom on pinch release
   - gentler exponential zoom curve (like in normal camera apps)
   - toggle to disable dual-camera mode
+  - new experimental (stock) Camera2 recorder, enabled by default
+- stock experimental voice/round recorder settings visible in release builds
 
 ## photo viewer
 
@@ -192,12 +197,14 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - per-account passcodes, hidden accounts, panic code, hidden settings deeplink - *ported from [Nekogram](https://github.com/Nekogram/Nekogram)*
 - 🐶 paranoia mode: pick chats/channels to hide everywhere; all secret chats hidden too; exit by typing a custom code in chat search
   - optional whitelist mode: hide everything *except* the picked chats (service notifications stay visible)
-  - optionally hide the FAgram settings entirely when enabled
+  - optionally hide the Inugram settings entirely when enabled
   - optionally disguise as stock Telegram when enabled
   - optionally silence all notifications while enabled
   - optionally hide all other accounts while enabled
   - optionally collapse folder tabs (show only All Chats) while enabled
   - optionally hide your own stories (ring, profile tabs, archive) while enabled
+  - optionally show Telegram Stars balance as 0 with no transactions or stats while enabled
+  - optionally hide the Money wallet and show Gram Earnings as 0 with no transactions or stats while enabled
   - optional launcher long-press shortcut to enter it quickly (hidden while active)
 - biometric confirmation before deleting/clearing a chat or logging out - *inspired by [Cherrygram](https://github.com/arsLan4k1390/Cherrygram)*
 
@@ -215,29 +222,28 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - 🐶 disable swipe-to-hide the General topic in the forum topics list
 - disable motion photos (rendering + detection, in picker and in messages)
 - disable notification chat bubbles
+- 🐶 keep previous chats in the back stack when opening another chat
 - 🐶 disable cloud drafts upload
 - 🐶 disable wallpaper parallax
 - 🐶 disable scroll-snap in profile
 - 🐶 reduce profile motion (skip various enter animations, disable avatar scale-on-scroll effect)
 - 🐶 prefer "Media" tab in profile over Gifts/Posts
-- 🐶 members filter in group/channel profiles: filter member list by All, Administrators, Bots, or Deleted Accounts
-- Last.fm Now Playing profile card (with #np:&lt;username&gt; bio tag sync, rotating disc silhouette window and dynamic accent rim stroke over static album art while playing, plus parallel iTunes & MusicBrainz/Cover Art Archive fallback cover resolution) - *ported from FAgramDesktop*
-- clickable links in user bios
+- "Send a gift" in profile menu (stock hides it without billing), optional "Gift" header action button
 - 🐶 recyclerlistview instant-tap
 - open bottom-tab menus early by swiping up; flat highlight (not ripple) on menu hover
 - faster downloads/uploads
 - auto-disable the configured proxy while a VPN is active
+- batch import proxy links from clipboard (one per line)
 - send MP4 files attached through Files as playable videos without conversion
 - sort attach panel albums by photo count instead of recency
+- 🐶 optimized attachment menu setting: [smoother animations](https://github.com/teidesu/inugram/pull/56) when opening photos and videos, large photos open at up to 1920px, with full quality loaded when zooming or editing; disables background blur in the media viewer
 - 🐶 "Minimize" option in the attach panel discard prompt to keep the selection (e.g. to choose a message to reply to)
-- choose the media save folder (FAgram/Telegram) used for saved photos, videos, music and downloads
+- choose the media save folder (Inugram/Telegram) used for saved photos, videos, music and downloads
 - original video quality option in quality picker, including audio removal without re-encoding video
 - remember last used settings in polls + reasonable defaults
-- local premium: unlocks client-side premium limits and hides all "Get Premium" and gifting prompts
 
 ## annoyances
 
-- 🐶 disable ads: sponsored messages, bot ads, search ads, video ads, and proxy sponsor channels
 - hide trending stickers/emoji in egs
 - 🐶 hide ai features
 - hide stories
@@ -258,8 +264,15 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - disable quick share (long-tap share button → send to frequent contact without confirmation)
 - disable auto-play when opening the pinned music player on a profile
 
+
 ## 🐶 bugfixes (vs stock)
 
+- android 16 "expanded" dark theme no longer force-inverts the app
+- channel update queue no longer replays the same update indefinitely after an earlier queued update advances PTS
+- flaky networks: server time offset no longer reset to the epoch by a `bad_msg_notification` inside a container (messages sent meanwhile were dated 1 Jan 1970); session resets on old retransmitted server messages re-send pending requests with fresh msg_id/seqno instead of stale ones (which made the server reject them and cascaded into more resets)
+- network stays awake in background for up to 2 minutes while generic requests (sends, getDifference) are pending, instead of pausing after 10 seconds regardless
+- text messages no longer show the "sent" tick on transport quick ack (server received the packet, not the send); the clock stays until the server confirms the message, which on bad links could be minutes later
+- sticker cutout/eraser edits no longer progressively fade and/or darken transparent PNGs
 - connection status title no longer gets stuck on "Updating..." when its transition animation is cancelled
 - accelerated video playback no longer applies an unnecessary pitch shift; live speed-slider changes use Android's low-latency audio mixer path
 - "Save to Downloads" copies uncached documents after downloading instead of requiring a second attempt
@@ -267,10 +280,13 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - "Save to Downloads" preserves the original filename on Android 10+
 - downloaded photos/videos no longer show up in the system gallery on devices whose scanner indexes app-private dirs (stock never wrote `.nomedia` into the media cache dirs; only on Android 11+, where the gallery-visible copies live elsewhere)
 - gboard image paste no longer skips PhotoViewer
+- PhotoViewer selected-media strip crash after sending/scheduling edited media while the strip is still moving
 - reordering an attach-panel album preserves per-photo captions and no longer duplicates its album caption
 - photo crop silently not applied to the sent image
 - high-quality photo cropping in PhotoViewer (crop *before* downscaling)
 - sticker creator output sent as photo when high-quality default is on
+- sticker-pack Edit button no longer ignores slower taps or inherits the recent-stickers Create button's long-press action
+- sticker editor send/favorites menu uses the editor's dark background instead of the app's light theme; other scrim menus also respect their local theme
 - non-square webm stickers rendered off-center in the emoji panel (precached frames were blitted top-left and scaled by width only)
 - webm sticker permanently stuck blank until the app is restarted (an image load cancelled mid-flight published a decoder-less drawable into the animation cache, whose stream stayed cancelled and which never retried decoding)
 - webm stickers played too fast (frame pacing was driven by the container's declared fps instead of frame timestamps, so variable-rate or mis-probed webm ran at up to 2x)
@@ -297,9 +313,18 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - image memory cache sized off `getMemoryClass()` while the app runs with `android:largeHeap` — the cache was ~29MB instead of ~56MB, too small to hold the shared media grid and the photo viewer's full-screen bitmaps at once, so opening any photo evicted the whole grid and every cell flashed its blurred thumbnail
 - attach panel: better perf, safe close before fully open
 - paid reaction animation respects litemode
+- context menus no longer let the list behind them scroll when a drag starts just before the menu window takes input
+- dialogs shown over a story (or another attached sheet) no longer lose their dismiss callback (stock bug: the fragment handed the dialog to the sheet and dropped the listener)
 - custom emoji reaction burst respects litemode (stock only gated the "around" animation of regular emoji)
 - reaction counter shift during long-tap menu
-- reactions silently disappearing right after being sent (stale server read race)
+- media caption hiding and then revealing top-down when reactions first appear on the message
+- reactions silently disappearing right after being sent (stale server read race); for a few seconds after a send, server answers that lose or undercount your own reaction are corrected from the local state
+- seen reactions coming back to the unread reactions counter (stock only told the server once the local counter hit 0, so every server count reload resurrected them); each read is now reported via `readMessageContents`
+- reactions vanishing for a moment after editing a message that got reacted to while the edit was open (the edit applied a stale copy of the message)
+- unread reactions counter drifting and wiping unseen reactions: stock never decremented the chat's counter per read, never told an open group chat about new unread reactions, and "fixed" both by marking everything read once its own local counter hit 0; reads now update the counter per message, and only an explicit "read all" or an empty server answer marks everything read
+- reaction effect and haptic skipped whenever the in-chat counter was already 0, and never played for reactions reached via the jump button (the jump marked them read before the message was even shown)
+- album reactions counted once per bottom-row photo; a stale reactions update could also mark a just-seen reaction unread again
+- in-memory unread reactions count overwritten by a stale database copy after deleting messages
 - channel reactions: toggling "Enable Reactions" was silently discarded on back (unsaved-changes check only compared the emoji selection, never the enabled state), and re-enabling always saved the prefilled list as an explicit set instead of "All"
 - rounded section backgrounds ignored the alpha of the fading container they lived in, so they stayed fully opaque during the animation and only popped away on the next unrelated redraw (e.g. toggling "Enable Reactions" in channel reactions)
 - sticky date pill jump and color shift when replacing an inline date separator
@@ -310,6 +335,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - applying a style over a mixed-span selection smearing one span (e.g. mono) across the whole range
 - photo viewer ui respects litemode blur
 - search-as-list box respects litemode blur
+- emoji/sticker panel bottom controls use solid backgrounds when Power Saving blur is disabled
 - lazy face detect (only on filters tab)
 - lazy chromecast init in photo viewer
 - stale video seekbar leaking onto photos in photo viewer
@@ -328,6 +354,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - nav stack lockup after rapid back swipes
 - click-through area to the left/right of bottom bar tabs
 - profile scroll jump when opening uncached user
+- "Add post" button no longer flashes when opening your profile before the Posts section is visible
 - duplicate edit-info and profile-photo actions in the standalone self-profile overflow menu
 - stale unread badges on global-search top peers
 - stale unread mention pointer after reading mention on another device (mention button jumping to old message)
@@ -339,9 +366,9 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - admin logs scroll jumping when loading events
 - fix glitch when quickly dismissing photo editor after cropping
 - persist crop when rotating photo in photo editor
+- photo viewer crop showing a black screen, captions going missing and broken pip transitions after the viewer moves to another activity
 - chat preview no longer marks visible reactions/poll votes as read
 - dialogs list briefly flashing over the lockscreen after ending/declining a call
-- fix camera2api a/v sync issue in round messages
 - forward bar showing stale message count/senders after deselecting messages in the forward options sheet
 - forwarding with captions removed no longer blanks out text-only messages in the optimistic copy (stock only checked `media != null`, but locally-sent text messages carry `messageMediaEmpty` sometimes)
 - cross-peer reply: clear stale quote so a leftover quote-reply target doesn't override the new one at send
@@ -362,7 +389,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - comments/topic thread restored as plain group chat after activity recreation
 - phantom message selection after back-gesture swipe over a reply header (leaked long-press timer)
 - fix deeplinking to a non-primary album member sometimes mis-anchoring
-- a bunch of stock memory/resource leaks (incl. `NativeByteBuffer` wrapper pool growing unbounded on write-heavy threads, reply-line sticker emoji never detaching and pinning closed chats via the global emoji cache, story viewer input/mention observers, `BotLocation` caching an activity context)
+- a bunch of stock memory/resource leaks (incl. `NativeByteBuffer` wrapper pool growing unbounded on write-heavy threads, reply-line sticker emoji never detaching and pinning closed chats via the global emoji cache, story viewer input/mention observers, `BotLocation` caching an activity context, saved messages tag hint timers re-posting forever after the chat is closed, detached/measuring message cells registering animated emoji in the global cache, instant view sheets never unregistering their observers)
 - correctly handle "Open in..." in ChatAttachAlert: open editor before sending + support multi-attach
 - avatar of a bubble right below a topic separator (forum "All" tab) only clickable in its lower part
 - opt out of android media resumption, so a phantom telegram player chip no longer reappears in quick settings after a reboot or once the app process is gone
@@ -370,6 +397,7 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - notifications for chats read on another device no longer linger forever when the app process was killed in between (stock only tracked posted notifications in memory)
 - more stale notification fixes: reaction, "scheduled message sent", story and forum-topic notifications now clear when read/seen on another device while the app is connected (stock only cleared these via FCM pushes, which aren't delivered to online sessions, or on opening the chat locally); notification refresh is no longer skipped when unread counts happen to stay equal (forums, communities, muted chats)
 - unchanged notifications are no longer re-posted on every update (stock re-notifies every chat each time anything changes, making notification bridges like Mi Fitness re-forward the whole stack to the wearable)
+- notification avatars no longer go missing after the system evicts them from cache: a missing avatar is downloaded and the notification updated silently once it arrives
 - crash long-pressing a sticker set while off-screen rows are cached (reorder update bound null item on cached/hidden holders)
 - crash cutting out a sticker after the photo editor recycled the source image mid-segmentation
 - storage usage cached-media list intermittently refusing to scroll
@@ -377,11 +405,22 @@ most things are toggleable in `Settings → FAgram`, with sensible opinionated d
 - chat drifting a few px off the input when hiding the keyboard while a message animation runs (aosp recyclerview bug: end-anchored padding delta applied twice across pre+post layout)
 - crash expanding/loading more votes in poll results (sections adapter diffed against an empty hash list on the first update, re-inserting every already-laid-out item)
 - crash tapping the story privacy badge on a story from a user with no first name (e.g. deleted account)
+- expanded story reactions no longer remain above the app after dismissing the reply keyboard with the system back gesture
 - stop spamming doomed admin-list requests (`COMMUNITY_FILTER_INVALID`) on every open of a community you're not an admin of
 - crash in the forward picker inside a community when the community's info updates (stock updates an action bar avatar view that picker mode never creates)
+- crash rendering tables in rich messages and instant view with oversized/negative col/rowspans or a row wider than the first (stock sized the grid from raw spans and the first row only)
+- hashtags, mentions, custom emoji and other entities missing from rich message previews in the chat list (stock preview formatter dropped every rich text type it did not list)
+- blank white area where the keyboard was when opening another screen from a chat with the keyboard up (leftover adjustResize-era filler drawn over the edge-to-edge chat)
+- opening/closing a screen with the keyboard up no longer waits up to 250ms for the keyboard to hide first (adjustResize-era delay, pointless with edge-to-edge)
+- avatar long-press preview stuck on blurred placeholder after the cached profile photo reference expired (stock used the often-null `UserFull.user` and a parent that cannot refresh profile photo references)
 - fix bottom progress bar on video bubbles now following inline playback (autoplay & play-with-sound)
 - correctly publish album name for streamed music
+- music player playlist covers matching the player cover (stock list used the uploaded thumb while the player used the file's embedded cover or an iTunes lookup)
 - permanently white/stale message bubbles on low-memory devices (stock bug: `MessageDrawable` committed its radius/color cache keys even when the bitmap allocation for the bubble nine-patch failed, so the stale drawable was never rebuilt; the shadow nine-patch also recycled its old bitmap before allocating the new one, leaving a recycled bitmap in use)
-- unread reaction/poll vote badge stuck on a chat after reading some of them on another device (stock only persisted the dialog counter once it hit zero); counter now follows every single-message read, each read is acked to the server right away; the jump-to-reaction button no longer marks everything read when its offset overshoots
 - group call recording timer showing a nonsense duration (the whole unix epoch, e.g. `496691:48:15`) right after starting a recording: stock flips the local `recording` flag optimistically while `record_start_date` is still 0
-- fix crash when opening external or tel: links while mini-app/browser WebView container is detached or preserved
+- message database stalls (up to minutes) on big chats: reading mentions, deleting replied-to messages and loading the user rating scanned the whole cached history because sqlite picked the wrong index; also reply previews of deleted messages are now actually cleared when several messages are deleted at once (stock bound the id list as one string, matching nothing)
+- a busy channel no longer loses its whole cached history whenever the server answers "difference too long" (stock wiped every cached message, which could block the message database for minutes on big chats and stopped music playing from that chat); the cache is kept but reloaded from the server, and channel messages deleted while the app was not watching now disappear once their part of the history is loaded (stock kept them forever)
+- new channel messages sometimes appearing minutes late (until the next update in that chat): stock threw away channel updates that arrived while it was already fetching a channel's missed updates, and replayed the waiting ones before applying the fetched state
+- a sent message moves into its server order once confirmed (e.g. a photo that finished uploading after a later text moves below that text), so the local order matches what the recipient sees
+- hashtag search in another channel (`#tag@channel`): no more huge empty gap above the results, last message in "show as chat" no longer hidden under the bottom bar, long-tapping a reaction on a channel post shows the reaction instead of failing to load reactors
+- search result previews with a media thumbnail no longer drift to the right while scrolling

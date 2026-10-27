@@ -13,15 +13,15 @@ diff --git a/TMessagesProj/build.gradle b/TMessagesProj/build.gradle
 index 0000000..0000000 100644
 --- a/TMessagesProj/build.gradle
 +++ b/TMessagesProj/build.gradle
-@@ -99,6 +99,7 @@ dependencies {
+@@ -104,6 +104,7 @@ dependencies {
  
      // inu
      implementation 'org.maplibre.gl:android-sdk:13.1.0'
 +    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
-     // end inu
- 
- //    implementation 'com.google.mlkit:translate:17.0.3'
-@@ -160,6 +161,10 @@ android {
+     implementation 'com.caverock:androidsvg-aar:1.4'
+     androidTestImplementation 'androidx.test:runner:1.6.2'
+     androidTestImplementation 'junit:junit:4.13.2'
+@@ -235,6 +236,10 @@ android {
                  }
              }
          }
@@ -36,7 +36,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java b/
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
-@@ -621,6 +621,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -628,6 +628,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
      private int setUsernameRow;
      private int bioRow;
      public int inu_idRow;
@@ -45,7 +45,7 @@ index 0000000..0000000 100644
      private int phoneSuggestionSectionRow;
      private int graceSuggestionRow;
      private int graceSuggestionSectionRow;
-@@ -10559,6 +10561,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -10664,6 +10666,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
          setUsernameRow = -1;
          bioRow = -1;
          inu_idRow = -1;
@@ -54,7 +54,7 @@ index 0000000..0000000 100644
          channelRow = -1;
          channelDividerRow = -1;
          phoneSuggestionSectionRow = -1;
-@@ -10720,6 +10724,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -10827,6 +10831,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                      setAvatarRow = rowCount++;
                      setAvatarSectionRow = rowCount++;
                  }
@@ -65,7 +65,7 @@ index 0000000..0000000 100644
                  numberSectionRow = rowCount++;
                  numberRow = rowCount++;
                  setUsernameRow = rowCount++;
-@@ -10799,6 +10807,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -10906,6 +10914,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                      unofficialSecurityRiskDividerRow = rowCount++;
                  }
  
@@ -76,7 +76,7 @@ index 0000000..0000000 100644
                  if (userInfo != null && (userInfo.flags2 & 64) != 0 && (profileChannelMessageFetcher == null || !profileChannelMessageFetcher.loaded || !profileChannelMessageFetcher.messageObjects.isEmpty())) {
                      final TLRPC.Chat channel = getMessagesController().getChat(userInfo.personal_channel_id);
                      if (channel != null && (ChatObject.isPublic(channel) || !ChatObject.isNotInChat(channel))) {
-@@ -13244,7 +13256,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -13360,7 +13372,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                  VIEW_TYPE_TEXT_DETAIL_MULTILINE_2 = 30,
                  VIEW_TYPE_EMPTY2 = 31,
                  VIEW_TYPE_TEXT2 = 32,
@@ -86,7 +86,7 @@ index 0000000..0000000 100644
                          ;
  
          private Context mContext;
-@@ -13257,6 +13270,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -13373,6 +13386,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
          public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
              View view;
              switch (viewType) {
@@ -98,7 +98,7 @@ index 0000000..0000000 100644
                  case VIEW_TYPE_HEADER: {
                      view = new HeaderCell(mContext, 18, resourcesProvider);
                      break;
-@@ -13779,6 +13797,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -13895,6 +13913,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                      detailCell.textView.setLoading(loadingSpan);
                      detailCell.valueTextView.setLoading(loadingSpan);
                      break;
@@ -116,7 +116,7 @@ index 0000000..0000000 100644
                  case VIEW_TYPE_ABOUT_LINK:
                      AboutLinkCell aboutLinkCell = (AboutLinkCell) holder.itemView;
                      if (position == userInfoRow) {
-@@ -14440,7 +14469,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -14556,7 +14585,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              int type = holder.getItemViewType();
              return type != VIEW_TYPE_HEADER && type != VIEW_TYPE_DIVIDER && type != VIEW_TYPE_SHADOW &&
                      type != VIEW_TYPE_EMPTY && type != VIEW_TYPE_EMPTY2 && type != VIEW_TYPE_HEADER_EMPTY && type != VIEW_TYPE_BOTTOM_PADDING && type != VIEW_TYPE_SHARED_MEDIA &&
@@ -125,7 +125,7 @@ index 0000000..0000000 100644
          }
  
          @Override
-@@ -14450,6 +14479,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -14566,6 +14595,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
  
          @Override
          public int getItemViewType(int position) {
@@ -135,7 +135,7 @@ index 0000000..0000000 100644
              if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                      position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                  return VIEW_TYPE_HEADER;
-@@ -15913,6 +15945,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+@@ -16029,6 +16061,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
              put(++pointer, bizLocationRow, sparseIntArray);
              put(++pointer, birthdayRow, sparseIntArray);
              put(++pointer, inu_idRow, sparseIntArray);
@@ -147,7 +147,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java b
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/SettingsActivity.java
-@@ -900,9 +900,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
+@@ -938,9 +938,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                  break;
              }
  

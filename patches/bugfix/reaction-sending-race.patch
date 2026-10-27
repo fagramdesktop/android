@@ -1,14 +1,15 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: alina sireneva <alina@tei.su>
-Date: Tue, 12 May 2026 11:05:37 +0200
+From: alina sireneva <alina@tei.pet>
+Date: Tue, 6 Oct 2026 18:10:07 +0400
 Subject: fix reactions silently disappearing right after being sent
 
 ---
- .../ChatMessagesMetadataController.java       |  7 +++++++
- .../org/telegram/messenger/MessageObject.java | 19 +++++++++++++++++++
+ .../ChatMessagesMetadataController.java       |  7 +++++
+ .../org/telegram/messenger/MessageObject.java | 19 +++++++++++++
+ .../messenger/MessagesController.java         | 28 +++++++++++++++++++
  .../messenger/SendMessagesHelper.java         |  1 +
  .../java/org/telegram/ui/ChatActivity.java    |  1 +
- 4 files changed, 28 insertions(+)
+ 5 files changed, 56 insertions(+)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/ChatMessagesMetadataController.java b/TMessagesProj/src/main/java/org/telegram/messenger/ChatMessagesMetadataController.java
 index 0000000..0000000 100644
@@ -32,7 +33,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.ja
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
-@@ -766,11 +766,30 @@ public class MessageObject {
+@@ -768,11 +768,30 @@ public class MessageObject {
          return null;
      }
  
@@ -63,11 +64,64 @@ index 0000000..0000000 100644
          if (messageOwner.reactions != null && messageOwner.reactions.results != null && !messageOwner.reactions.results.isEmpty() && old.messageOwner.reactions != null && old.messageOwner.reactions.results != null) {
              for (int i = 0; i < messageOwner.reactions.results.size(); i++) {
                  TLRPC.ReactionCount reactionCount = messageOwner.reactions.results.get(i);
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+@@ -17791,6 +17791,32 @@ public class MessagesController extends BaseController implements NotificationCe
+         }
+     }
+ 
++    private static void mergeMessageReactionUpdates(ArrayList<TLRPC.Update> updates) {
++        for (int a = 0, size = updates.size(); a < size; a++) {
++            TLRPC.Update baseUpdate = updates.get(a);
++            TLRPC.Message message;
++            if (baseUpdate instanceof TL_update.TL_updateEditChannelMessage) {
++                message = ((TL_update.TL_updateEditChannelMessage) baseUpdate).message;
++            } else if (baseUpdate instanceof TL_update.TL_updateEditMessage) {
++                message = ((TL_update.TL_updateEditMessage) baseUpdate).message;
++            } else {
++                continue;
++            }
++            long dialogId = MessageObject.getDialogId(message);
++            for (int b = 0; b < size; b++) {
++                if (updates.get(b) instanceof TL_update.TL_updateMessageReactions) {
++                    TL_update.TL_updateMessageReactions update = (TL_update.TL_updateMessageReactions) updates.get(b);
++                    if (message.id == update.msg_id && dialogId == MessageObject.getPeerId(update.peer)) {
++                        if (xie.fa.gram.helpers.chat.ReactionDebugHelper.isEnabled()) {
++                            FileLog.d("InuRx merge edit reactions did=" + dialogId + " mid=" + message.id + " edit=" + xie.fa.gram.helpers.chat.ReactionDebugHelper.describe(message.reactions) + " update=" + xie.fa.gram.helpers.chat.ReactionDebugHelper.describe(update.reactions));
++                        }
++                        MessageObject.updateReactions(message, update.reactions);
++                    }
++                }
++            }
++        }
++    }
++
+     public static long getUpdateChannelId(TLRPC.Update update) {
+         if (update instanceof TL_update.TL_updateNewChannelMessage) {
+             return ((TL_update.TL_updateNewChannelMessage) update).message.peer_id.channel_id;
+@@ -18131,6 +18157,7 @@ public class MessagesController extends BaseController implements NotificationCe
+             }
+             if (!needGetDiff) {
+                 getMessagesStorage().putUsersAndChats(updates.users, updates.chats, true, true);
++                mergeMessageReactionUpdates(updates.updates);
+                 Collections.sort(updates.updates, updatesComparator);
+                 for (int a = 0; a < updates.updates.size(); a++) {
+                     TLRPC.Update update = updates.updates.get(a);
+@@ -18426,6 +18453,7 @@ public class MessagesController extends BaseController implements NotificationCe
+             }
+             return true;
+         }
++        mergeMessageReactionUpdates(updates);
+         long currentTime = System.currentTimeMillis();
+         boolean printChanged = false;
+ 
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java b/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
-@@ -3825,6 +3825,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
+@@ -3991,6 +3991,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
          if (messageObject == null || parentFragment == null) {
              return;
          }
@@ -79,7 +133,7 @@ diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMe
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
 +++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
-@@ -33001,6 +33001,7 @@ public class ChatActivity extends BaseFragment implements
+@@ -33299,6 +33299,7 @@ public class ChatActivity extends BaseFragment implements
          }
  
          ReactionsEffectOverlay.removeCurrent(false);

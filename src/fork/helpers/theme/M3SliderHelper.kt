@@ -1,0 +1,623 @@
+package xie.fa.gram.helpers.theme
+
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.RectF
+import android.os.SystemClock
+import android.view.View
+import androidx.core.graphics.ColorUtils
+import xie.fa.gram.InuConfig
+import org.telegram.messenger.AndroidUtilities
+import org.telegram.ui.ActionBar.Theme
+import org.telegram.ui.Components.AnimatedFloat
+import org.telegram.ui.Components.CubicBezierInterpolator
+import org.telegram.ui.Components.Easings
+import org.telegram.ui.Components.SeekBarView
+import org.telegram.ui.Components.SlideChooseView
+import java.util.WeakHashMap
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.roundToInt
+
+/**
+ * Material 3 slider rendering (thick track, floating bar handle with a gap, stop indicator),
+ * drawn in place of the stock thin-line + circle-thumb sliders when
+ * [xie.fa.gram.InuConfig.MATERIAL3_SLIDERS] is on.
+ *
+ * Geometry uses compact M3 proportions (track 12dp r6, inside corners 1.5dp, handle 3x24,
+ * 4dp handle gap, 3dp stop indicator/ticks) so it fits Telegram's dense layouts.
+ *
+ * Three consumers:
+ * - [drawSeekBar] takes over [SeekBarView.onDraw] (settings sliders, music player, wallpaper dim…);
+ *   falls back to stock for the two-sided mode and chapter-timestamp tracks it doesn't model.
+ * - [drawSlideChoose] takes over [SlideChooseView.onDraw] (discrete labeled choosers); the label
+ *   row is reproduced verbatim from stock so drawable/text layouts don't shift.
+ * - [drawPlain] renders a plain 0..1 slider for fork views built on the low-level
+ *   [org.telegram.ui.Components.SeekBar] (see [xie.fa.gram.ui.settings.SliderCell]).
+ *
+ * Touch handling, accessibility and progress state stay fully stock. Haptics on stepped sliders
+ * are limited to the tick positions selected by the same density rules used for drawing.
+ */
+object M3SliderHelper {
+    private const val TRACK_HEIGHT = 12f
+    private const val OUTER_RADIUS = 6f
+
+    // corner facing the handle gap
+    private const val INNER_RADIUS = 1.5f
+    private const val GAP = 4f
+    private const val HANDLE_WIDTH = 3f
+    private const val HANDLE_WIDTH_PRESSED = 1.5f
+
+    // Compact enough for 38dp settings hosts and SlideChooseView's nearby label row. The min()
+    // against the host height in drawHandle remains a guard for shorter views.
+    private const val HANDLE_HEIGHT = 24f
+    private const val TICK_RADIUS = 1.5f
+    private const val DIM_ALPHA = 0.5f
+
+    // tick density limits; denser stops get subsampled (see tickCount)
+    private const val MIN_TICK_SPACING = 16f
+    private const val MAX_TICK_COUNT = 7
+
+    // wavy playback progress, values from SystemUI's media SquigglyProgress
+    private const val WAVE_LENGTH = 20f
+    private const val WAVE_AMPLITUDE = 1.5f
+    private const val WAVE_SPEED = 8f
+    private const val WAVE_STROKE = 3f
+    private const val WAVE_HANDLE_WIDTH = 5f
+    private const val WAVE_HANDLE_HEIGHT = 17f
+    private const val WAVE_IN_DELAY = 60L
+    private const val WAVE_IN_DURATION = 800L
+    private const val WAVE_OUT_DURATION = 550L
+    private val waveInInterpolator = CubicBezierInterpolator(0.05, 0.7, 0.1, 1.0)
+    private val waveOutInterpolator = CubicBezierInterpolator(0.0, 0.0, 0.0, 1.0)
+
+    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val wavePath = Path()
+    private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF()
+    private val path = Path()
+    private val radii = FloatArray(8)
+
+    private class State {
+        // parentless on purpose: a parent-bound AnimatedFloat strongly retains the view, which
+        // would pin this entry's WeakHashMap key forever. The draw path invalidates instead.
+        val handleWidth = AnimatedFloat(0, 120, CubicBezierInterpolator.DEFAULT)
+        var lastUpdateTime = 0L
+
+        var wavy = false
+        var wavePlaying = false
+        var waveVisible = false
+        var waveFrom = 0f
+        var waveTo = 0f
+        var waveAnimStart = 0L
+        var wavePhase = 0f
+        var lastWaveFrameTime = 0L
+    }
+
+    // per-view animation state; entries must not reference their key or they never get collected
+    private val states = WeakHashMap<View, State>()
+
+    private fun enabled() = InuConfig.MATERIAL3_SLIDERS.value
+
+    private fun stateFor(view: View) = states.getOrPut(view) { State() }
+
+    private fun inactiveColor(themed: Int): Int =
+        resolveColor(themed, Theme.key_player_progressBackground, "monet_secondary_container_")
+
+    private fun bufferedColor(themed: Int): Int =
+        resolveColor(themed, Theme.key_player_progressCachedBackground, "monet_secondary_", "(a=25)")
+
+    private fun resolveColor(themed: Int, key: Int, tokenPrefix: String, modifiers: String = ""): Int {
+        val theme = Theme.getActiveTheme() ?: return themed
+        if (!theme.inu_isMonet() || themed != Theme.getColor(key)) return themed
+        val token = tokenPrefix + (if (theme.inu_isMonetNight()) "dark" else "light") + modifiers
+        val color = MonetHelper.getColor(token)
+        return if (color == 0) themed else color
+    }
+
+    /**
+     * Turns [view] into a thin wavy playback slider, like the system media notification:
+     * the played part waves and scrolls while [playing], flattening out when paused or dragged.
+     */
+    @JvmStatic
+    fun setWavyPlaying(view: SeekBarView, playing: Boolean, animated: Boolean) {
+        val state = stateFor(view)
+        state.wavePlaying = playing
+        setWaveVisible(state, playing && !view.isDragging, state.wavy && animated)
+        state.wavy = true
+        state.lastWaveFrameTime = SystemClock.elapsedRealtime()
+        view.invalidate()
+    }
+
+    private fun setWaveVisible(state: State, visible: Boolean, animated: Boolean) {
+        val target = if (visible) 1f else 0f
+        if (!animated) {
+            state.waveFrom = target
+            state.waveAnimStart = 0L
+        } else if (state.waveVisible != visible) {
+            state.waveFrom = waveFraction(state)
+            state.waveAnimStart = SystemClock.elapsedRealtime()
+        }
+        state.waveVisible = visible
+        state.waveTo = target
+    }
+
+    private fun waveFraction(state: State): Float {
+        if (state.waveAnimStart == 0L) return state.waveTo
+        val elapsed = SystemClock.elapsedRealtime() - state.waveAnimStart
+        val t = if (state.waveVisible) {
+            ((elapsed - WAVE_IN_DELAY).coerceAtLeast(0L) / WAVE_IN_DURATION.toFloat()).coerceAtMost(1f)
+        } else {
+            (elapsed / WAVE_OUT_DURATION.toFloat()).coerceAtMost(1f)
+        }
+        if (t >= 1f) {
+            state.waveAnimStart = 0L
+            return state.waveTo
+        }
+        val interpolator = if (state.waveVisible) waveInInterpolator else waveOutInterpolator
+        return AndroidUtilities.lerp(state.waveFrom, state.waveTo, interpolator.getInterpolation(t))
+    }
+
+    private fun drawWavy(view: SeekBarView, canvas: Canvas, state: State, left: Float, right: Float, cx: Float, cy: Float): Boolean {
+        setWaveVisible(state, state.wavePlaying && !view.isDragging, true)
+        val fraction = waveFraction(state)
+        val waveLength = AndroidUtilities.dpf2(WAVE_LENGTH)
+        val amplitude = AndroidUtilities.dpf2(WAVE_AMPLITUDE) * fraction
+        val stroke = AndroidUtilities.dpf2(WAVE_STROKE)
+
+        val now = SystemClock.elapsedRealtime()
+        val scrolling = state.waveVisible
+        if (scrolling) {
+            state.wavePhase = (state.wavePhase + (now - state.lastWaveFrameTime) / 1000f * AndroidUtilities.dpf2(WAVE_SPEED)) % waveLength
+        }
+        state.lastWaveFrameTime = now
+
+        wavePaint.strokeWidth = stroke
+        wavePaint.color = inactiveColor(view.getThemedColor(Theme.key_player_progressBackground))
+        if (right > cx) canvas.drawLine(cx, cy, right, cy, wavePaint)
+
+        if (view.bufferedProgress > 0f) {
+            val bufferedRight = min(left + view.bufferedProgress * (right - left), right)
+            if (bufferedRight > cx) {
+                wavePaint.color = bufferedColor(view.getThemedColor(Theme.key_player_progressCachedBackground))
+                canvas.drawLine(cx, cy, bufferedRight, cy, wavePaint)
+            }
+        }
+
+        val activeColor = view.outerPaint1.color
+        wavePaint.color = activeColor
+        if (cx > left) {
+            val waveStart = left - state.wavePhase - waveLength / 2f
+            val half = waveLength / 2f
+            wavePath.rewind()
+            wavePath.moveTo(waveStart, cy + amplitude)
+            var x = waveStart
+            var sign = 1f
+            while (x < cx) {
+                sign = -sign
+                val midX = x + half / 2f
+                wavePath.cubicTo(midX, cy - sign * amplitude, midX, cy + sign * amplitude, x + half, cy + sign * amplitude)
+                x += half
+            }
+
+            val clip = amplitude + stroke
+            canvas.save()
+            canvas.clipRect(left, cy - clip, cx, cy + clip)
+            canvas.drawPath(wavePath, wavePaint)
+            canvas.restore()
+
+            val startY = cy + cos((left - waveStart) / waveLength * 2 * PI).toFloat() * amplitude
+            canvas.drawPoint(left, startY, wavePaint)
+        }
+
+        drawHandle(canvas, cx, cy, AndroidUtilities.dpf2(WAVE_HANDLE_WIDTH), AndroidUtilities.dpf2(WAVE_HANDLE_HEIGHT), activeColor)
+
+        return scrolling || state.waveAnimStart != 0L
+    }
+
+    /** Current animated handle width in px; narrows while dragging like the M3 pressed state. */
+    private fun handleWidth(view: View, dragging: Boolean): Float {
+        val anim = stateFor(view).handleWidth
+        val width = anim.set(AndroidUtilities.dpf2(if (dragging) HANDLE_WIDTH_PRESSED else HANDLE_WIDTH))
+        if (anim.isInProgress) view.invalidate()
+        return width
+    }
+
+    @JvmStatic
+    fun drawSeekBar(view: SeekBarView, canvas: Canvas): Boolean {
+        if (!enabled()) return false
+        if (view.isTwoSided) return false
+
+        val timestamps = view.timestamps
+        if (timestamps != null && timestamps.isNotEmpty()) return false
+
+        val width = view.measuredWidth
+        val span = width - view.selectorWidth
+        if (span <= 0) return true
+
+        // mirror stock's step snapping (SeekBarView.onDraw top)
+        var thumbX = view.thumbX.toFloat()
+        val delegate = view.delegate
+        var stepsCount = 0
+        if (view.separatorsCount > 1) {
+            stepsCount = view.separatorsCount
+            val step = span / (stepsCount - 1f)
+            thumbX = view.animatedThumbX.set((thumbX / step).roundToInt() * step)
+        } else if (delegate != null && delegate.needVisuallyDivideSteps() && delegate.stepsCount > 1) {
+            stepsCount = delegate.stepsCount
+            val step = span / (stepsCount - 1f)
+            thumbX = ((thumbX / step).roundToInt() * step)
+        }
+
+        var cx = thumbX + view.selectorWidth / 2f
+
+        // stock cross-fades two thumb circles on animated setProgress(); a bar handle slides instead
+        var invalidate = false
+        if (view.transitionProgress < 1f) {
+            val fromCx = view.transitionThumbX + view.selectorWidth / 2f
+            cx = AndroidUtilities.lerp(fromCx, cx, Easings.easeOutQuad.getInterpolation(view.transitionProgress))
+
+            val state = stateFor(view)
+            val now = SystemClock.elapsedRealtime()
+            var dt = now - state.lastUpdateTime
+            state.lastUpdateTime = now
+
+            if (dt > 18) dt = 16
+            view.transitionProgress = min(1f, view.transitionProgress + dt / 225f)
+            invalidate = true
+        }
+
+        val cy = view.measuredHeight / 2f
+        val left = view.selectorWidth / 2f
+        val right = width - view.selectorWidth / 2f
+
+        val state = states[view]
+        if (state != null && state.wavy) {
+            if (drawWavy(view, canvas, state, left, right, cx, cy) || invalidate) view.postInvalidateOnAnimation()
+            return true
+        }
+
+        val activeColor = view.outerPaint1.color
+        val inactiveColor = inactiveColor(view.getThemedColor(Theme.key_player_progressBackground))
+        val hw = handleWidth(view, view.isDragging) / 2f
+        val gap = AndroidUtilities.dpf2(GAP)
+        val outerR = AndroidUtilities.dpf2(OUTER_RADIUS)
+        val innerR = AndroidUtilities.dpf2(INNER_RADIUS)
+
+        // stock renders the sub-minProgress region at half alpha
+        val dimUntil = if (view.minProgress >= 0f) left + view.minProgress * (right - left) else -Float.MAX_VALUE
+        val activeRight = cx - hw - gap
+        val inactiveLeft = cx + hw + gap
+        drawSpan(canvas, left, activeRight, cy, outerR, innerR, activeColor, dimUntil, Float.MAX_VALUE)
+        drawSpan(canvas, inactiveLeft, right, cy, innerR, outerR, inactiveColor, -Float.MAX_VALUE, Float.MAX_VALUE)
+
+        if (view.bufferedProgress > 0f) {
+            val bufferedRight = left + view.bufferedProgress * (right - left)
+            if (bufferedRight > inactiveLeft + 1f) {
+                trackPaint.color = bufferedColor(view.getThemedColor(Theme.key_player_progressCachedBackground))
+                val endR = if (bufferedRight >= right - 1f) outerR else innerR
+                drawRounded(canvas, inactiveLeft, min(bufferedRight, right), cy, innerR, endR, trackPaint)
+            }
+        }
+
+        val dots = tickCount(stepsCount - 1, right - left)
+        if (dots > 0) {
+            drawTicks(
+                canvas, left, right, cy, cx, hw, dots, stepsCount - 1,
+                view.getThemedColor(Theme.key_windowBackgroundWhite), activeColor, dimUntil,
+            )
+        } else {
+            drawStopIndicator(canvas, right, cy, inactiveLeft, activeColor)
+        }
+
+        drawHandle(canvas, cx, cy, hw * 2f, view.measuredHeight.toFloat(), activeColor)
+
+        if (invalidate) view.postInvalidateOnAnimation()
+
+        return true
+    }
+
+    @JvmStatic
+    fun drawSlideChoose(view: SlideChooseView, canvas: Canvas): Boolean {
+        if (!enabled()) return false
+
+        val options = view.optionsStr ?: return false
+        val count = options.size
+        if (count == 0) return true
+
+        val selectedAnimated = view.selectedIndexAnimatedHolder.set(view.selectedIndex.toFloat())
+        val movingAnimated = view.movingAnimatedHolder.set(if (view.moving) 1f else 0f)
+        val cy = view.measuredHeight / 2f + AndroidUtilities.dp(11f)
+        val stride = view.lineSize + view.gapSize * 2 + view.circleSize
+        fun centerX(index: Float) = view.sideSide + stride * index + view.circleSize / 2f
+
+        val handleW = AndroidUtilities.lerp(
+            AndroidUtilities.dpf2(HANDLE_WIDTH),
+            AndroidUtilities.dpf2(HANDLE_WIDTH_PRESSED),
+            movingAnimated,
+        )
+        val hw = handleW / 2f
+        val cx = centerX(selectedAnimated)
+        val outerR = AndroidUtilities.dpf2(OUTER_RADIUS)
+        val innerR = AndroidUtilities.dpf2(INNER_RADIUS)
+        val gap = AndroidUtilities.dpf2(GAP)
+        val trackLeft = centerX(0f) - outerR
+        val trackRight = centerX((count - 1).toFloat()) + outerR
+        val activeColor = view.getThemedColor(Theme.key_player_progress)
+        val inactiveColor = inactiveColor(view.getThemedColor(Theme.key_player_progressBackground))
+
+        // stock: options at/below minIndex show at half alpha; dashed region beyond dashedFrom
+        // (approximate/auto values) rendered dimmed instead of dashed
+        val minActive = view.minIndex != Int.MIN_VALUE && view.minIndex >= 0
+        val dimUntil = if (minActive) centerX(view.minIndex.toFloat()) else -Float.MAX_VALUE
+        val dimFrom = if (view.dashedFrom != -1) centerX(view.dashedFrom.toFloat()) else Float.MAX_VALUE
+        // the caps extend past the edge stops further than the handle gap covers
+        if (cx > centerX(0f) + 1f) {
+            drawSpan(canvas, trackLeft, cx - hw - gap, cy, outerR, innerR, activeColor, dimUntil, dimFrom)
+        }
+        if (cx < centerX((count - 1).toFloat()) - 1f) {
+            drawSpan(canvas, cx + hw + gap, trackRight, cy, innerR, outerR, inactiveColor, dimUntil, dimFrom)
+        }
+
+        val tickR = AndroidUtilities.dpf2(TICK_RADIUS)
+        for (a in 0 until count) {
+            val x = centerX(a.toFloat())
+            if (abs(x - cx) < hw + gap + tickR) continue
+
+            var color = if (x < cx) view.getThemedColor(Theme.key_windowBackgroundWhite) else activeColor
+            if ((minActive && a <= view.minIndex) || (view.dashedFrom != -1 && a >= view.dashedFrom)) {
+                color = Theme.multAlpha(color, DIM_ALPHA)
+            }
+
+            tickPaint.color = color
+            canvas.drawCircle(x, cy, tickR, tickPaint)
+        }
+
+        drawHandle(canvas, cx, cy, handleW, view.measuredHeight.toFloat(), activeColor)
+
+        // label row reproduced from stock SlideChooseView.onDraw so text/drawables land identically
+        for (a in 0 until count) {
+            val t = (1f - abs(a - selectedAnimated)).coerceAtLeast(0f)
+            val size = view.optionsSizes[a]
+            val text = options[a]
+            view.textPaint.color = ColorUtils.blendARGB(
+                view.getThemedColor(Theme.key_windowBackgroundWhiteGrayText),
+                view.getThemedColor(Theme.key_windowBackgroundWhiteBlueText),
+                t,
+            )
+
+            val leftDrawables = view.leftDrawables
+            if (leftDrawables != null) {
+                canvas.save()
+
+                when (a) {
+                    0 -> canvas.translate(AndroidUtilities.dp(12f).toFloat(), AndroidUtilities.dp(15.5f).toFloat())
+                    count - 1 -> canvas.translate(
+                        (view.measuredWidth - size - AndroidUtilities.dp(22f) - AndroidUtilities.dp(10f)).toFloat(),
+                        (AndroidUtilities.dp(28f) - AndroidUtilities.dp(12.5f)).toFloat(),
+                    )
+                    else -> canvas.translate(
+                        centerX(a.toFloat()) - size / 2f - AndroidUtilities.dp(10f),
+                        (AndroidUtilities.dp(28f) - AndroidUtilities.dp(12.5f)).toFloat(),
+                    )
+                }
+
+                leftDrawables[a].setColorFilter(view.textPaint.color, PorterDuff.Mode.MULTIPLY)
+                leftDrawables[a].draw(canvas)
+                canvas.restore()
+                canvas.save()
+                canvas.translate(
+                    leftDrawables[a].intrinsicWidth / 2f - AndroidUtilities.dp(if (a == 0) 3f else 2f),
+                    0f,
+                )
+            }
+            when (a) {
+                0 -> canvas.drawText(text, AndroidUtilities.dp(22f).toFloat(), AndroidUtilities.dp(28f).toFloat(), view.textPaint)
+                count - 1 -> canvas.drawText(
+                    text,
+                    (view.measuredWidth - size - AndroidUtilities.dp(22f)).toFloat(),
+                    AndroidUtilities.dp(28f).toFloat(),
+                    view.textPaint,
+                )
+                else -> canvas.drawText(text, centerX(a.toFloat()) - size / 2f, AndroidUtilities.dp(28f).toFloat(), view.textPaint)
+            }
+
+            if (leftDrawables != null) canvas.restore()
+        }
+
+        return true
+    }
+
+    /**
+     * Plain 0..1 slider for fork views wrapping the low-level `SeekBar`, which maps progress over
+     * `width - 24dp` with the thumb center offset by 12dp — [sidePaddingDp] must match that.
+     * [steps] is the snap stop count for tick dots (0 = continuous, stop indicator only).
+     */
+    @JvmStatic
+    fun drawPlain(view: View, canvas: Canvas, progress: Float, dragging: Boolean, steps: Int = 0, sidePaddingDp: Float = 12f): Boolean {
+        if (!enabled()) return false
+
+        val width = view.width
+        val pad = AndroidUtilities.dpf2(sidePaddingDp)
+        if (width <= pad * 2) return true
+
+        val left = pad
+        val right = width - pad
+        val cy = view.height / 2f
+        val cx = left + (right - left) * progress.coerceIn(0f, 1f)
+        val hw = handleWidth(view, dragging) / 2f
+        val gap = AndroidUtilities.dpf2(GAP)
+        val outerR = AndroidUtilities.dpf2(OUTER_RADIUS)
+        val innerR = AndroidUtilities.dpf2(INNER_RADIUS)
+        val activeColor = Theme.getColor(Theme.key_player_progress)
+        val inactiveColor = inactiveColor(Theme.getColor(Theme.key_player_progressBackground))
+
+        val inactiveLeft = cx + hw + gap
+        drawSpan(canvas, left, cx - hw - gap, cy, outerR, innerR, activeColor, -Float.MAX_VALUE, Float.MAX_VALUE)
+        drawSpan(canvas, inactiveLeft, right, cy, innerR, outerR, inactiveColor, -Float.MAX_VALUE, Float.MAX_VALUE)
+
+        val dots = tickCount(steps - 1, right - left)
+        if (dots > 0) {
+            drawTicks(
+                canvas, left, right, cy, cx, hw, dots, steps - 1,
+                Theme.getColor(Theme.key_windowBackgroundWhite), activeColor, -Float.MAX_VALUE,
+            )
+        } else {
+            drawStopIndicator(canvas, right, cy, inactiveLeft, activeColor)
+        }
+
+        drawHandle(canvas, cx, cy, hw * 2f, view.height.toFloat(), activeColor)
+
+        return true
+    }
+
+    /**
+     * Number of tick dots for a stepped slider, laid out uniformly over the cap-inset span:
+     * every stop when they fit under [MAX_TICK_COUNT] / [MIN_TICK_SPACING], otherwise thinned —
+     * using the largest count whose gaps land evenly on real stops. 0 = fewer than 3 dots fit or
+     * no clean subdivision exists — render as a continuous track with only its stop indicator.
+     */
+    private fun tickCount(intervals: Int, spanPx: Float): Int {
+        if (intervals < 1) return 0
+
+        // dots are laid out over the span inset by the cap radius on both sides (see drawTicks)
+        val dotSpan = spanPx - 2 * AndroidUtilities.dpf2(OUTER_RADIUS)
+        val maxBySpacing = (dotSpan / AndroidUtilities.dpf2(MIN_TICK_SPACING)).toInt() + 1
+        val maxDots = minOf(MAX_TICK_COUNT, maxBySpacing, intervals + 1)
+        if (maxDots < 3) return 0
+
+        for (dots in maxDots downTo 3) {
+            if (intervals % (dots - 1) == 0) return dots
+        }
+
+        return 0
+    }
+
+    /**
+     * Whether a stepped slider should vibrate at [stepIndex]. With M3 sliders off this preserves
+     * stock's haptic on every snap; with M3 on it returns true only for a rendered tick position.
+     */
+    @JvmStatic
+    fun shouldVibrateAtTick(stepIndex: Int, steps: Int, spanPx: Float): Boolean {
+        if (!enabled()) return true
+
+        val intervals = steps - 1
+        val dots = tickCount(intervals, spanPx)
+        if (dots == 0 || stepIndex !in 0..intervals) return false
+
+        for (j in 0 until dots) {
+            val tickStep = j * intervals / (dots - 1)
+            if (stepIndex == tickStep) return true
+        }
+        return false
+    }
+
+    private fun drawTicks(
+        canvas: Canvas,
+        left: Float,
+        right: Float,
+        cy: Float,
+        cx: Float,
+        hw: Float,
+        dots: Int,
+        intervals: Int,
+        onActiveColor: Int,
+        onInactiveColor: Int,
+        dimUntilX: Float,
+    ) {
+        val tickR = AndroidUtilities.dpf2(TICK_RADIUS)
+        val gap = AndroidUtilities.dpf2(GAP)
+
+        // Dots span the range inset by the cap radius, with every marker assigned to a real snap
+        // stop. End dots sit concentric with the rounded caps; the handle gap swallows the small
+        // cap inset whenever the handle lands on a marker.
+        val endInset = AndroidUtilities.dpf2(OUTER_RADIUS)
+        val l = left + endInset
+        val r = right - endInset
+        for (j in 0 until dots) {
+            val tickStep = j * intervals / (dots - 1)
+            val x = l + (r - l) * tickStep / intervals
+            if (abs(x - cx) < hw + gap + tickR) continue
+
+            var color = if (x < cx) onActiveColor else onInactiveColor
+            if (x < dimUntilX) color = Theme.multAlpha(color, DIM_ALPHA)
+            tickPaint.color = color
+            canvas.drawCircle(x, cy, tickR, tickPaint)
+        }
+    }
+
+    private fun drawStopIndicator(canvas: Canvas, right: Float, cy: Float, inactiveLeft: Float, color: Int) {
+        val tickR = AndroidUtilities.dpf2(TICK_RADIUS)
+        // centered on the cap's corner arc center, concentric with the rounding
+        val stopX = right - AndroidUtilities.dpf2(OUTER_RADIUS)
+        if (stopX > inactiveLeft + tickR) {
+            tickPaint.color = color
+            canvas.drawCircle(stopX, cy, tickR, tickPaint)
+        }
+    }
+
+    /**
+     * One track span with [radL]/[radR] end corners; the parts before [dimUntilX] / after
+     * [dimFromX] are drawn at half alpha (split edges stay square so the track reads continuous).
+     */
+    private fun drawSpan(
+        canvas: Canvas,
+        l: Float,
+        r: Float,
+        cy: Float,
+        radL: Float,
+        radR: Float,
+        color: Int,
+        dimUntilX: Float,
+        dimFromX: Float,
+    ) {
+        if (r - l < 1f) return
+        val p1 = dimUntilX.coerceIn(l, r)
+        val p2 = dimFromX.coerceIn(p1, r)
+        var a = l
+
+        for (b in floatArrayOf(p1, p2, r)) {
+            if (b - a >= 0.5f) {
+                val dimmed = b <= p1 + 0.01f || a >= p2 - 0.01f
+                trackPaint.color = if (dimmed) Theme.multAlpha(color, DIM_ALPHA) else color
+                drawRounded(canvas, a, b, cy, if (a <= l + 0.5f) radL else 0f, if (b >= r - 0.5f) radR else 0f, trackPaint)
+            }
+            a = b
+        }
+    }
+
+    private fun drawRounded(canvas: Canvas, l: Float, r: Float, cy: Float, radL: Float, radR: Float, paint: Paint) {
+        val half = AndroidUtilities.dpf2(TRACK_HEIGHT) / 2f
+        rect.set(l, cy - half, r, cy + half)
+
+        if (radL == radR) {
+            canvas.drawRoundRect(rect, radL, radL, paint)
+            return
+        }
+
+        radii[0] = radL; radii[1] = radL
+        radii[2] = radR; radii[3] = radR
+        radii[4] = radR; radii[5] = radR
+        radii[6] = radL; radii[7] = radL
+        path.rewind()
+        path.addRoundRect(rect, radii, Path.Direction.CW)
+        canvas.drawPath(path, paint)
+    }
+
+    private fun drawHandle(canvas: Canvas, cx: Float, cy: Float, width: Float, maxHeight: Float, color: Int) {
+        val h = min(AndroidUtilities.dpf2(HANDLE_HEIGHT), maxHeight)
+        val hw = width / 2f
+        rect.set(cx - hw, cy - h / 2f, cx + hw, cy + h / 2f)
+        handlePaint.color = color
+        canvas.drawRoundRect(rect, hw, hw, handlePaint)
+    }
+}
