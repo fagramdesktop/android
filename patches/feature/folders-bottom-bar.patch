@@ -4,9 +4,9 @@ Date: Sun, 20 Sep 2026 19:58:28 +0530
 Subject: Allow folder tabs at bottom of dialog list (above bottom tabs) with M3 and classic mode support
 
 ---
- .../ui/Components/FilterTabsView.java         | 14 +++-
- .../java/org/telegram/ui/DialogsActivity.java | 81 +++++++++++++++----
- 2 files changed, 77 insertions(+), 18 deletions(-)
+ .../ui/Components/FilterTabsView.java         | 19 +++-
+ .../java/org/telegram/ui/DialogsActivity.java | 86 +++++++++++++++----
+ 2 files changed, 84 insertions(+), 21 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java
 index 0000000..0000000 100644
@@ -38,6 +38,18 @@ index 0000000..0000000 100644
              canvas.restore();
          }
      }
+@@ -1571,6 +1579,11 @@ public class FilterTabsView extends FrameLayout {
+             super.dispatchDraw(canvas);
+             return;
+         }
++        if (xie.fa.gram.helpers.dialogs.FoldersHelper.isBottom()) {
++            super.dispatchDraw(canvas);
++            canvas.drawRect(0, 0, getMeasuredWidth(), AndroidUtilities.dp(1), Theme.dividerPaint);
++            return;
++        }
+         canvas.save();
+         canvas.clipPath(clipPath);
+         super.dispatchDraw(canvas);
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
 index 0000000..0000000 100644
 --- a/TMessagesProj/src/main/java/org/telegram/ui/DialogsActivity.java
@@ -104,16 +116,23 @@ index 0000000..0000000 100644
          additionFloatingButtonOffset = hasMainTabs ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin()) : 0;
  
          return true;
-@@ -5267,8 +5275,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
-             filterTabsViewBackground.setPadding(dp(6.666f));
+@@ -5262,13 +5270,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+         }
+ 
+         if (filterTabsView != null) {
+-            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(filterTabsView, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
+-            filterTabsViewBackground.setRadius(dp(18));
+-            filterTabsViewBackground.setPadding(dp(6.666f));
++            boolean folderBottom = FoldersHelper.isBottom();
++            BlurredBackgroundDrawable filterTabsViewBackground = FoldersHelper.createBackground(iBlur3FactoryLiquidGlass, filterTabsView, resourceProvider);
              filterTabsView.setPadding(0, dp(7), 0, dp(7));
              filterTabsView.setBlurredBackground(filterTabsViewBackground);
 -            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
 -            NonIslandHelper.applyFilterTabBar(filterTabsView, contentView);
-+            boolean folderBottom = FoldersHelper.isBottom();
 +            int folderGravity = folderBottom ? Gravity.BOTTOM : Gravity.TOP;
 +            int folderBottomMargin = 0;
-+            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, folderGravity, 4, 0, 4, folderBottomMargin));
++            int marginHorizontal = folderBottom ? 0 : 4;
++            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, FoldersHelper.barHeightDp(), folderGravity, marginHorizontal, 0, marginHorizontal, folderBottomMargin));
 +            if (folderBottom) {
 +                // At bottom: divider at top of folder bar (separating from list) instead of bottom
 +                NonIslandHelper.applyFilterTabBarBottom(filterTabsView, contentView);
@@ -123,7 +142,7 @@ index 0000000..0000000 100644
          }
  
          if (fragmentSearchField != null) {
-@@ -6717,18 +6733,28 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -6717,18 +6732,28 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
          float topPanelsVisibility = 0;
          float fadeViewT = totalOffset;
  
@@ -155,7 +174,7 @@ index 0000000..0000000 100644
                  );
              } else {
                  topPanelLayout.setTranslationY(lerp(
-@@ -7346,9 +7372,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -7346,9 +7371,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
  
              @Override
              public int getTopOffset(int tag) {
@@ -167,7 +186,7 @@ index 0000000..0000000 100644
                      (topPanelLayout != null ? topPanelLayout.getHeight() : 0) +
                      (dialogStoriesCell != null && dialogStoriesCellVisible ? (int) ((1f - dialogStoriesCell.getCollapsedProgress()) * dp(DialogStoriesCell.HEIGHT_IN_DP)) : 0) +
                      (NonIslandHelper.globalSearch() ? 0 : dp(SEARCH_FIELD_HEIGHT) - (int) MathUtils.clamp(-scrollYOffset - getMaxScrollYOffsetWithoutSearch(), 0, dp(SEARCH_FIELD_HEIGHT)))
-@@ -14129,9 +14156,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -14129,9 +14155,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
  
          final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
          statusBarHeight = systemInsets.top;
@@ -179,7 +198,7 @@ index 0000000..0000000 100644
              this.imeInsetHeight = imeInsetHeight;
              fragmentView.requestLayout();
          }
-@@ -14496,10 +14524,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -14496,10 +14523,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
          final int mainTabBottom = fragmentView.getMeasuredHeight() - MainTabsHelper.getMainTabsBottomOffset(navigationBarHeight);
          final int mainTabTop = mainTabBottom - MainTabsHelper.getMainTabsBlurHeight(navigationBarHeight);
  
@@ -194,7 +213,7 @@ index 0000000..0000000 100644
              + (topPanelLayout != null && topPanelLayout.getVisibility() == View.VISIBLE ? topPanelLayout.getSumHeightOfAllVisibleChild() : 0)
              + ((int) scrollYOffset);
  
-@@ -14514,6 +14545,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -14514,6 +14544,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
              iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
              iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
  
@@ -208,7 +227,7 @@ index 0000000..0000000 100644
              hasBottomBlur = true;
          } else if (commentView != null && chatInputViewsContainer != null) {
              iBlur3PositionMainTabs.set(0,
-@@ -14521,6 +14559,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -14521,6 +14558,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                  fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
              iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
  
@@ -223,7 +242,7 @@ index 0000000..0000000 100644
              hasBottomBlur = true;
          }
  
-@@ -14543,7 +14589,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+@@ -14543,7 +14588,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
          } else if (communityId != 0) {
              return navigationBarHeight + dp(12 + 48 + 12);
          } else {

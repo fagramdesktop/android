@@ -549,7 +549,7 @@ index 0000000..0000000 100644
          allTabsWidth += tab.getWidth(true) + dp(FolderHelper.getTabPadding());
          tabs.add(tab);
      }
-@@ -1744,6 +1749,9 @@ public class FilterTabsView extends FrameLayout {
+@@ -1749,6 +1754,9 @@ public class FilterTabsView extends FrameLayout {
              ArrayList<MessagesController.DialogFilter> filters = MessagesController.getInstance(UserConfig.selectedAccount).getDialogFilters();
              for (int a = 0, N = filters.size(); a < N; a++) {
                  MessagesController.DialogFilter filter = filters.get(a);
@@ -559,7 +559,7 @@ index 0000000..0000000 100644
                  if (filter.isDefault()) {
                      req.order.add(0);
                  } else {
-@@ -1967,7 +1975,7 @@ public class FilterTabsView extends FrameLayout {
+@@ -1972,7 +1980,7 @@ public class FilterTabsView extends FrameLayout {
  
          @Override
          public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
@@ -568,7 +568,7 @@ index 0000000..0000000 100644
                  return makeMovementFlags(0, 0);
              }
              return makeMovementFlags(ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, 0);
-@@ -1975,7 +1983,7 @@ public class FilterTabsView extends FrameLayout {
+@@ -1980,7 +1988,7 @@ public class FilterTabsView extends FrameLayout {
  
          @Override
          public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder source, @NonNull RecyclerView.ViewHolder target) {
@@ -577,7 +577,7 @@ index 0000000..0000000 100644
                  return false;
              }
              adapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
-@@ -1983,7 +1991,7 @@ public class FilterTabsView extends FrameLayout {
+@@ -1988,7 +1996,7 @@ public class FilterTabsView extends FrameLayout {
          }
  
          private final Runnable resetDefaultPosition = () ->  {

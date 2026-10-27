@@ -194,7 +194,7 @@ object MainTabsHelper {
                 object : Bulletin.Delegate {
                     override fun getBottomOffset(tag: Int): Int {
                         var bottomOffset = if (isHidden) 0 else dp(mainTabsHeightWithMargins.toFloat())
-                        if (InuConfig.FOLDERS_BAR_POSITION.value == InuConfig.FoldersBarPositionItem.BOTTOM) {
+                        if (FoldersHelper.isBottom()) {
                             bottomOffset += FoldersHelper.barHeightPx()
                         }
                         return bottomOffset

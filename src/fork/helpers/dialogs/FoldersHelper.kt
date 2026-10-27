@@ -1,9 +1,13 @@
 package xie.fa.gram.helpers.dialogs
 
 import org.telegram.messenger.AndroidUtilities
+import org.telegram.ui.ActionBar.Theme
+import org.telegram.ui.Components.FilterTabsView
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableViewFactory
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl
 import xie.fa.gram.InuConfig
 import xie.fa.gram.helpers.dialogs.MainTabsHelper
-import xie.fa.gram.helpers.theme.M3MainTabsHelper
 import xie.fa.gram.helpers.theme.NonIslandHelper
 
 object FoldersHelper {
@@ -18,14 +22,36 @@ object FoldersHelper {
         return navigationBarHeight + additionNavigationBarHeight
     }
 
-    // M3 mode: match M3 bar height; classic/non-island: existing folder bar heights
+    // Classic/non-island: 44dp; M3/default: 36dp tabs + 14dp vertical padding = 50dp
     @JvmStatic
     fun barHeightDp(): Int = when {
-        MainTabsHelper.isMaterial -> M3MainTabsHelper.barHeight
         NonIslandHelper.foldersBar() -> NonIslandHelper.FOLDERS_BAR_HEIGHT_DP
         else -> 36 + 14
     }
 
     @JvmStatic
     fun barHeightPx(): Int = AndroidUtilities.dp(barHeightDp().toFloat())
+
+    @JvmStatic
+    fun createBackground(
+        factory: BlurredBackgroundDrawableViewFactory,
+        tabsView: FilterTabsView,
+        resourceProvider: Theme.ResourcesProvider?
+    ): BlurredBackgroundDrawable {
+        val bottom = isBottom()
+        val provider = if (bottom) {
+            BlurredBackgroundProviderImpl.mainTabs(resourceProvider)
+        } else {
+            BlurredBackgroundProviderImpl.topPanel(resourceProvider)
+        }
+        val bg = factory.create(tabsView, provider)
+        if (bottom) {
+            bg.setRadius(0f)
+            bg.setPadding(0)
+        } else {
+            bg.setRadius(AndroidUtilities.dp(18f).toFloat())
+            bg.setPadding(AndroidUtilities.dp(6.666f))
+        }
+        return bg
+    }
 }

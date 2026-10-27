@@ -196,13 +196,13 @@ class AppearanceSettingsActivity : SettingsPageActivity() {
 
     private fun applyStyleChanges(changed: List<ExpandableBoolGroup.Option>) {
         val configs = changed.map { it.config }
+        if (InuConfig.M3_BOTTOM_TABS in configs && !InuConfig.M3_BOTTOM_TABS.value) {
+            InuConfig.FOLDERS_BAR_POSITION.value = InuConfig.FoldersBarPositionItem.TOP
+        }
         if (InuConfig.MATERIAL3_SWITCHES in configs || InuConfig.MATERIAL3_SLIDERS in configs) invalidateVisibleRows()
         if (configs.any { it in SOFT_REBUILD_CONFIGS }) softRebuild()
         if (InuConfig.M3_SECTIONS_STYLE in configs) inu_rebuildSelf()
         if (InuConfig.NON_ISLAND_CHAT_ELEMENTS in configs) InuHooks.syncChatInputRowHeight()
-        if (InuConfig.M3_BOTTOM_TABS in configs && !InuConfig.M3_BOTTOM_TABS.value) {
-            InuConfig.FOLDERS_BAR_POSITION.value = InuConfig.FoldersBarPositionItem.TOP
-        }
         listView.adapter.update(true)
     }
 
@@ -264,16 +264,22 @@ class AppearanceSettingsActivity : SettingsPageActivity() {
                 softRebuild()
             }
 
-            BUTTON_FOLDERS_BAR_POSITION -> RadioItemOptions.show(
-                this, view,
-                listOf(
-                    LocaleController.getString(R.string.InuFoldersBarPositionTop),
-                    LocaleController.getString(R.string.InuFoldersBarPositionBottom),
-                ),
-                InuConfig.FOLDERS_BAR_POSITION.value,
-            ) { which ->
-                InuConfig.FOLDERS_BAR_POSITION.value = which
-                listView.adapter.update(true)
+            BUTTON_FOLDERS_BAR_POSITION -> {
+                if (!InuConfig.M3_BOTTOM_TABS.value || InuConfig.BOTTOM_TABS_HIDE.value) return
+                RadioItemOptions.show(
+                    this, view,
+                    listOf(
+                        LocaleController.getString(R.string.InuFoldersBarPositionTop),
+                        LocaleController.getString(R.string.InuFoldersBarPositionBottom),
+                    ),
+                    InuConfig.FOLDERS_BAR_POSITION.value,
+                ) { which ->
+                    if (InuConfig.FOLDERS_BAR_POSITION.value != which) {
+                        InuConfig.FOLDERS_BAR_POSITION.value = which
+                        listView.adapter.update(true)
+                        softRebuild()
+                    }
+                }
             }
 
             TOGGLE_HIDE_CONTACTS_TAB -> {

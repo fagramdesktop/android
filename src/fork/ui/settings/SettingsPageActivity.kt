@@ -62,6 +62,7 @@ abstract class SettingsPageActivity : UniversalFragment() {
             listView.clipToPadding = false
             listView.setOnItemClickListener { view, position, x, y ->
                 val item = listView.adapter.getItem(position) ?: return@setOnItemClickListener
+                if (!item.enabled) return@setOnItemClickListener
                 onClick(item, view, position, x, y)
                 listView.adapter.update(true)
             }
