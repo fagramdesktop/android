@@ -104,6 +104,7 @@ jobs:
         with:
           sparse-checkout: |
             .github/scripts/tgupload.py
+            changelogs
           depth: 1
 
       - name: Download signed artifact
@@ -171,21 +172,11 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           CHANGELOG: ${{ env.CHANGELOG }}
         run: |
-          for apk in '${{ needs.build.outputs.apk-full-name }}' '${{ needs.build.outputs.apk-pluginless-name }}'; do
-            APK_FILE="out/$apk"
-            SHA256=$(sha256sum "$APK_FILE" | awk '{print $1}')
-            variant_suffix=""
-            if [[ "$apk" == *"-pluginless"* ]]; then
-              variant_suffix=" (Pluginless)"
-            fi
-            python3 .github/scripts/tgupload.py "$APK_FILE" \
-              --chat-id "${{ secrets.CHAT_ID }}" \
-              --title "FAgram Android ${{ needs.build.outputs.tag }}$variant_suffix" \
-              --base-version "${{ needs.build.outputs.ver-name }}" \
-              --checksum "$SHA256" \
-              --build-type "rel" \
-              --branch "${{ github.ref_name }}"
-          done
+          python3 .github/scripts/tgupload.py out \
+            --rich \
+            --chat-id "${{ secrets.CHAT_ID }}" \
+            --build-info "out/build-info.json" \
+            --changelog "${{ env.CHANGELOG }}"
 
       - name: Bump build number and release SHA
         env:

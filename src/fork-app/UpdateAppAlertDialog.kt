@@ -1,6 +1,7 @@
 package xie.fa.gram
 
 import android.content.Context
+import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -18,6 +19,7 @@ import org.telegram.messenger.DocumentObject
 import org.telegram.messenger.FileLoader
 import org.telegram.messenger.ImageLocation
 import org.telegram.messenger.LocaleController
+import org.telegram.messenger.MessageObject
 import org.telegram.messenger.R
 import org.telegram.messenger.RichMessageLayout
 import org.telegram.tgnet.TLRPC
@@ -163,6 +165,16 @@ class UpdateAppAlertDialog(
             if (changelog != null && changelog.blocks.isNotEmpty()) {
                 RichMessageLayout.PreviewView(context, accountNum, null).apply {
                     set(changelog)
+                    setPadding(dp(23f), dp(15f), dp(23f), dp(8f))
+                }
+            } else if (!appUpdate.text.isNullOrEmpty()) {
+                TextView(context).apply {
+                    setTextColor(Theme.getColor(Theme.key_dialogTextBlack))
+                    setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f)
+                    val builder = SpannableStringBuilder(appUpdate.text)
+                    MessageObject.addEntitiesToText(builder, appUpdate.entities, false, false, false, false)
+                    text = builder
+                    movementMethod = AndroidUtilities.LinkMovementMethodMy()
                     setPadding(dp(23f), dp(15f), dp(23f), dp(8f))
                 }
             } else {
