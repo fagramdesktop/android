@@ -84,7 +84,7 @@
                     android:startOffset="200"
                     android:duration="100"
                     android:valueFrom="0"
-                    android:valueTo="1"
+                    android:valueTo="0.4"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in" />
             </set>
