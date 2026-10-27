@@ -52,9 +52,15 @@ object DialogsFabHelper {
     // recomputed on each createView so toggling the pref applies without fragment recreation
     @JvmStatic
     fun floatingButtonOffset(hasMainTabs: Boolean): Int {
-        if (!hasMainTabs) return 0
-        if (!offsetForBottomBar()) return -dp(10f)
-        return dp((MainTabsHelper.mainTabsHeight + MainTabsHelper.mainTabsMargin).toFloat())
+        if (FoldersHelper.isBottom() && hasMainTabs) {
+            // folder bar at the bottom takes up the space above the tabs; FABs must clear it
+            return dp(MainTabsHelper.mainTabsHeightWithMargins.toFloat()) + FoldersHelper.barHeightPx() + dp(4f)
+        }
+        return when {
+            !hasMainTabs -> 0
+            !offsetForBottomBar() -> -dp(10f)
+            else -> dp((MainTabsHelper.mainTabsHeight + MainTabsHelper.mainTabsMargin).toFloat())
+        }
     }
 
     @JvmStatic

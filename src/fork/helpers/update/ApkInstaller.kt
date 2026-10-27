@@ -47,7 +47,6 @@ import org.telegram.ui.Components.AlertsCreator
 import org.telegram.ui.Components.LayoutHelper
 import org.telegram.ui.Components.RLottieImageView
 import org.telegram.ui.LaunchActivity
-import java.io.File
 import java.io.IOException
 
 object ApkInstaller {

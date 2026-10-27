@@ -5,8 +5,8 @@ Subject: Allow folder tabs at bottom of dialog list (above bottom tabs) with M3 
 
 ---
  .../ui/Components/FilterTabsView.java         | 14 +++-
- .../java/org/telegram/ui/DialogsActivity.java | 79 +++++++++++++++----
- 2 files changed, 76 insertions(+), 17 deletions(-)
+ .../java/org/telegram/ui/DialogsActivity.java | 81 +++++++++++++++----
+ 2 files changed, 77 insertions(+), 18 deletions(-)
 
 diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java
 index 0000000..0000000 100644
@@ -55,7 +55,7 @@ index 0000000..0000000 100644
                      }
                      if (fragmentSearchField != null && !NonIslandHelper.globalSearch()) {
 -                        fragmentSearchField.setTranslationY(top + actionBarHeight - (actionBar.getHeight() + (filterTabsView != null ? filterTabsView.getMeasuredHeight() : 0)) + getSearchFieldAdditionOffset());
-+                        int folderHeightForSearch = (filterTabsView != null && xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() != xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM) ? filterTabsView.getMeasuredHeight() : 0;
++                        int folderHeightForSearch = (filterTabsView != null && !FoldersHelper.isBottom()) ? filterTabsView.getMeasuredHeight() : 0;
 +                        fragmentSearchField.setTranslationY(top + actionBarHeight - (actionBar.getHeight() + folderHeightForSearch) + getSearchFieldAdditionOffset());
                      }
                  }
@@ -65,7 +65,7 @@ index 0000000..0000000 100644
                      storiesAlpha = 1f - Utilities.clamp(rightSlidingProgress / 0.5f, 1f, 0f);
                  }
 -                if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
-+                if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() != xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM) {
++                if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && !FoldersHelper.isBottom()) {
                      tabsYOffset -= (1f - animatorFilterTabsVisible.getFloatValue()) * filterTabsView.getMeasuredHeight();
                  }
                  if (fragmentSearchField != null && !NonIslandHelper.globalSearch()) {
@@ -95,13 +95,22 @@ index 0000000..0000000 100644
              final float topPanelsVisibility = topPanelLayout != null ? topPanelLayout.getMetadata().getTotalVisibility() : 0f;
  
              t += (int) ((NonIslandHelper.foldersBar() ? NonIslandHelper.getFoldersBarVisibleHeight() : dp(36 + 14)) * filterTabsVisibility);
+@@ -3031,7 +3039,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
+         }
+ 
+         BirthdayController.getInstance(currentAccount).check();
+-        additionNavigationBarHeight = hasMainTabs ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
++        additionNavigationBarHeight = hasMainTabs && !MainTabsHelper.isHidden() ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
+         additionFloatingButtonOffset = hasMainTabs ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin()) : 0;
+ 
+         return true;
 @@ -5267,8 +5275,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
              filterTabsViewBackground.setPadding(dp(6.666f));
              filterTabsView.setPadding(0, dp(7), 0, dp(7));
              filterTabsView.setBlurredBackground(filterTabsViewBackground);
 -            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
 -            NonIslandHelper.applyFilterTabBar(filterTabsView, contentView);
-+            boolean folderBottom = xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() == xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM;
++            boolean folderBottom = FoldersHelper.isBottom();
 +            int folderGravity = folderBottom ? Gravity.BOTTOM : Gravity.TOP;
 +            int folderBottomMargin = 0;
 +            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, folderGravity, 4, 0, 4, folderBottomMargin));
@@ -118,7 +127,7 @@ index 0000000..0000000 100644
          float topPanelsVisibility = 0;
          float fadeViewT = totalOffset;
  
-+        boolean folderBottom = xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() == xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM;
++        boolean folderBottom = FoldersHelper.isBottom();
 +
          if (filterTabsView != null) {
 -            filterTabsView.setTranslationY(totalOffset - (NonIslandHelper.globalSearch() ? 0 : searchOffset) - (NonIslandHelper.foldersBar() ? NonIslandHelper.getFoldersBarOverlap() * getFilterTabsVisibilityFactor(false) : 0));
@@ -150,7 +159,7 @@ index 0000000..0000000 100644
  
              @Override
              public int getTopOffset(int tag) {
-+                boolean folderBottom = xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() == xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM;
++                boolean folderBottom = FoldersHelper.isBottom();
                  return (
                      (actionBar != null ? actionBar.getMeasuredHeight() : 0) +
 -                    (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0) +
@@ -220,9 +229,9 @@ index 0000000..0000000 100644
          } else {
 -            return navigationBarHeight + additionNavigationBarHeight;
 +            int bottomPadding = navigationBarHeight + additionNavigationBarHeight;
-+            boolean folderBottom = xie.fa.gram.InuConfig.FOLDERS_BAR_POSITION.getValue() == xie.fa.gram.InuConfig.FoldersBarPositionItem.BOTTOM;
++            boolean folderBottom = FoldersHelper.isBottom();
 +            if (folderBottom && filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
-+                bottomPadding += filterTabsView.getMeasuredHeight() + dp(4);
++                bottomPadding += filterTabsView.getMeasuredHeight();
 +            }
 +            return bottomPadding;
          }

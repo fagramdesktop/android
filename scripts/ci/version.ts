@@ -7,17 +7,17 @@ if (!appVerName) throw new Error('failed to read APP_VERSION_NAME')
 const appVerCode = /^APP_VERSION_CODE=(\d+)$/m.exec(props)?.[1]
 if (!appVerCode) throw new Error('failed to read APP_VERSION_CODE')
 
-const buildNum = Number(process.env.INU_BUILD ?? '1')
+const buildNum = Number(process.env.FA_BUILD ?? process.env.INU_BUILD ?? '1')
 if (!Number.isInteger(buildNum) || buildNum < 1) {
-  throw new Error(`invalid INU_BUILD: ${process.env.INU_BUILD}`)
+  throw new Error(`invalid build number: ${process.env.FA_BUILD ?? process.env.INU_BUILD}`)
 }
 
 const sha = process.env.GITHUB_SHA ?? ''
 const shortSha = sha.slice(0, 7)
 const verName = `${appVerName}-${shortSha}`
 const verCode = buildNum
-const apkFullName = `inugram-${verName}-${verCode}-full.apk`
-const apkPluginlessName = `inugram-${verName}-${verCode}-pluginless.apk`
+const apkFullName = `fagram-${verName}-${verCode}-full.apk`
+const apkPluginlessName = `fagram-${verName}-${verCode}-pluginless.apk`
 const tag = `v${appVerName}-${buildNum}`
 
 const out = {
@@ -28,6 +28,7 @@ const out = {
   'ver-code': String(verCode),
   'apk-full-name': apkFullName,
   'apk-pluginless-name': apkPluginlessName,
+  'apk-name': apkFullName,
   tag,
 }
 

@@ -11,6 +11,8 @@ on:
         value: ${{ jobs.build.outputs.apk-full-name }}
       apk-pluginless-name:
         value: ${{ jobs.build.outputs.apk-pluginless-name }}
+      apk-name:
+        value: ${{ jobs.build.outputs.apk-full-name }}
       ver-name:
         value: ${{ jobs.build.outputs.ver-name }}
       ver-code:
@@ -41,7 +43,7 @@ concurrency:
 permissions: {}
 
 env:
-  ARTIFACT_NAME: ${{ inputs.artifact-name || format('inugram-build-{0}', github.run_id) }}
+  ARTIFACT_NAME: ${{ inputs.artifact-name || format('fagram-build-{0}', github.run_id) }}
 
 jobs:
   build:
@@ -58,13 +60,14 @@ jobs:
     outputs:
       apk-full-name: ${{ steps.info.outputs.apk-full-name }}
       apk-pluginless-name: ${{ steps.info.outputs.apk-pluginless-name }}
+      apk-name: ${{ steps.info.outputs.apk-full-name }}
       ver-name: ${{ steps.info.outputs.ver-name }}
       ver-code: ${{ steps.info.outputs.ver-code }}
       app-ver-code: ${{ steps.info.outputs.app-ver-code }}
       build-num: ${{ steps.info.outputs.build-num }}
       tag: ${{ steps.info.outputs.tag }}
     steps:
-      - name: free disk space
+      - name: Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # main
         with:
           tool-cache: false
@@ -74,34 +77,37 @@ jobs:
           large-packages: false
           swap-storage: true
 
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: configure git identity
+      - name: Configure Git identity
         run: |
-          git config --global user.email ci@inugram
-          git config --global user.name 'inugram ci'
+          git config --global user.email ci@fagram
+          git config --global user.name 'fagram ci'
 
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      # rquickjs-sys always runs bindgen, which loads the clang C api; the runner image ships the
-      # clang drivers without libclang.so
-      - name: install libclang
+      - name: Install libclang
         if: matrix.variant == 'full'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libclang-dev
 
-      - name: cache cargo
+      - name: Cache cargo
         if: matrix.variant == 'full'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -111,49 +117,45 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: install android rust toolchain
+      - name: Install android rust toolchain
         if: matrix.variant == 'full'
         working-directory: src/native
         run: |
           rustup toolchain install
           cargo install cargo-ndk --version 4.1.2 --locked
 
-      # the plugin engine's own suite, including every bundled oracle; ubuntu-latest already ships
-      # rustup and a stable toolchain
-      - name: test (plugin engine)
+      - name: Test plugin engine
         if: matrix.variant == 'full'
         working-directory: src/native
         run: cargo test --locked
 
-      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@e42e6681d2906409c5dde4a315af6214eaa890ee # v1.2
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
           append-timestamp: true
-          key: ${{ runner.os }}-ndk-27.2-release-${{ matrix.variant }}
+          key: fagram-android-ndk-27.2-release-${{ matrix.variant }}
           restore-keys: |
-            ${{ runner.os }}-ndk-27.2-release-${{ matrix.variant }}
-            ${{ runner.os }}-ndk-27.2-release
-            ${{ runner.os }}-
+            fagram-android-ndk-27.2-release-${{ matrix.variant }}
+            fagram-android-ndk-27.2-release
+            fagram-android-ndk-
           max-size: 5G
           verbose: 2
 
-      - name: set up worktree
+      - name: Set up worktree
         run: pnpm run setup -- --ci ${{ matrix.variant == 'pluginless' && '--pluginless' || '' }}
 
-      # the node --check loop plus both tsc projects: the plugin contract, and the bundled plugins
-      # against it - a bundled oracle that lost a member reads as a refusal and passes without this
-      - name: typecheck (plugin contract + bundled plugins)
+      - name: Typecheck plugins
         if: matrix.variant == 'full'
         run: pnpm run typecheck-plugins
 
-      # the two typings files the tl generator writes, which the sdk publish in release.yml needs and
-      # cannot make without a worktree of its own
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Upload plugin typings
+        uses: actions/upload-artifact@v4
         if: matrix.variant == 'full'
         with:
           name: ${{ env.ARTIFACT_NAME }}-sdk
@@ -163,18 +165,21 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: compute build info
+      - name: Compute build info
         id: info
         env:
-          INU_BUILD: ${{ vars.INU_BUILD || '1' }}
+          FA_BUILD: ${{ vars.FA_BUILD || '1' }}
+          INU_BUILD: ${{ vars.FA_BUILD || '1' }}
         run: pnpm tsx scripts/ci/version.ts ${{ matrix.variant == 'pluginless' && '--pluginless' || '' }}
 
-      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-home-cache-cleanup: true
-          cache-read-only: false
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
         with:
           packages: >-
             platforms;android-36
@@ -182,37 +187,42 @@ jobs:
             cmake;3.31.6
             ndk;27.2.12479018
 
-      - name: tune gradle
+      - name: Tune Gradle properties
         run: |
-          echo 'org.gradle.caching=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.parallel=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx8192m -Dfile.encoding=UTF-8 -XX:+UseParallelGC' >> ~/.gradle/gradle.properties
-          echo 'android.native.buildOutput=verbose' >> ~/.gradle/gradle.properties
+          mkdir -p ~/.gradle
+          cat << 'EOF' >> ~/.gradle/gradle.properties
+          org.gradle.caching=true
+          org.gradle.parallel=true
+          org.gradle.jvmargs=-Xmx8192m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
+          android.native.buildOutput=verbose
+          EOF
 
-      # pure JVM, no android toolchain: the shared plugin policy plus the plugin bridge harness
-      - name: test (InuCore + plugin bridge)
+      - name: Test (InuCore)
         working-directory: ${{ matrix.worktree }}
         run: ./gradlew --no-daemon :InuCore:check
 
-      - name: reset ccache stats
+      - name: Reset ccache stats
         run: ccache -z
 
-      - name: build (unsigned, debug-keyed)
+      - name: Build (unsigned, debug-keyed)
         working-directory: ${{ matrix.worktree }}
         env:
           COMMIT_ID: ${{ github.sha }}
           INU_BUILD: ${{ steps.info.outputs.build-num }}
+          FA_BUILD: ${{ steps.info.outputs.build-num }}
           INU_BUILD_TYPE: release
+          FA_BUILD_TYPE: release
           CCACHE_COMPILERCHECK: content
           CCACHE_SLOPPINESS: time_macros,file_macro,include_file_mtime,include_file_ctime,locale,system_headers
           CCACHE_BASEDIR: ${{ github.workspace }}/${{ matrix.worktree }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
         run: ./gradlew --no-daemon :TMessagesProj_App:assembleRelease
 
-      - name: show ccache stats
+      - name: Show ccache stats
         if: always()
         run: ccache -s -v
 
-      - name: stage artifacts
+      - name: Stage artifacts
         run: |
           mkdir -p out
           apk='${{ matrix.variant == 'full' && steps.info.outputs.apk-full-name || steps.info.outputs.apk-pluginless-name }}'
@@ -235,7 +245,8 @@ jobs:
             '{verName:$verName,verCode:$verCode,appVerCode:$appVerCode,buildNum:$buildNum,apkFiles:{full:$apkFull,pluginless:$apkPluginless},baseTag:(if $baseTag == "" then null else $baseTag end),commitSha:$commitSha,repo:$repo}' \
             > out/build-info.json
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Upload unsigned build artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}-unsigned-${{ matrix.variant }}
           path: out/*

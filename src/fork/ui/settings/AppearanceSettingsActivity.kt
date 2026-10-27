@@ -115,7 +115,7 @@ class AppearanceSettingsActivity : SettingsPageActivity() {
                     BUTTON_FOLDERS_BAR_POSITION,
                     LocaleController.getString(R.string.InuFoldersBarPosition),
                     foldersBarPositionLabel(InuConfig.FOLDERS_BAR_POSITION.value),
-                )
+                ).setEnabled(InuConfig.M3_BOTTOM_TABS.value)
             )
             items.add(
                 UItem.asCheck(
@@ -200,6 +200,9 @@ class AppearanceSettingsActivity : SettingsPageActivity() {
         if (configs.any { it in SOFT_REBUILD_CONFIGS }) softRebuild()
         if (InuConfig.M3_SECTIONS_STYLE in configs) inu_rebuildSelf()
         if (InuConfig.NON_ISLAND_CHAT_ELEMENTS in configs) InuHooks.syncChatInputRowHeight()
+        if (InuConfig.M3_BOTTOM_TABS in configs && !InuConfig.M3_BOTTOM_TABS.value) {
+            InuConfig.FOLDERS_BAR_POSITION.value = InuConfig.FoldersBarPositionItem.TOP
+        }
         listView.adapter.update(true)
     }
 
@@ -254,6 +257,9 @@ class AppearanceSettingsActivity : SettingsPageActivity() {
             TOGGLE_BOTTOM_TABS -> {
                 val new = !InuConfig.BOTTOM_TABS_HIDE.toggle()
                 (view as? TextCheckCell)?.isChecked = new
+                if (!new) {
+                    InuConfig.FOLDERS_BAR_POSITION.value = InuConfig.FoldersBarPositionItem.TOP
+                }
                 listView.adapter.update(true)
                 softRebuild()
             }

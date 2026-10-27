@@ -27,6 +27,12 @@ object NotificationsHelper {
     }
 
     @JvmStatic
+    fun notificationColor(): Int = when (InuConfig.NOTIFICATION_ICON.value) {
+        InuConfig.NotificationIconItem.TELEGRAM -> 0xff11acfa.toInt()
+        else -> 0xffff5858.toInt()
+    }
+
+    @JvmStatic
     fun shouldSuppressNotifications(account: Int): Boolean =
         PasscodeHelper.isAccountHidden(account) ||
             ParanoiaHelper.shouldSuppressNotifications()

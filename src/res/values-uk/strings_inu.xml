@@ -8,7 +8,7 @@
     <string name="InuNavigationDrawerInfo">Повертає бічне гамбургер-меню з версій до 12.0.</string>
     <string name="InuDrawerBackGesture">Відкривати панель жестом «Назад»</string>
     <string name="InuDrawerBackGestureInfo">Свайп назад від лівого краю списку чатів відкриває бічну панель замість виходу з додатка.</string>
-    <string name="InuSettings">Налаштування Inugram</string>
+    <string name="InuSettings">Налаштування FAgram</string>
     <string name="InuSettingsInfo">що робить цей песик?</string>
     <string name="InuExperimental">Експериментальне</string>
     <string name="InuGeneral">Загальні</string>
@@ -257,7 +257,7 @@
     <string name="InuConfirmReactionText">Надіслати %1$s реакцію у **%2$s**?</string>
     <string name="InuNotificationIcon">Іконка сповіщень</string>
     <string name="InuNotificationIconTelegram">Telegram</string>
-    <string name="InuNotificationIconInugram">Inugram</string>
+    <string name="InuNotificationIconInugram">FAgram</string>
     <string name="InuDisableChatBubbles">Вимкнути бульбашки сповіщень Android</string>
     <string name="InuKeepChatsInStack">Залишати попередні чати відкритими</string>
     <string name="InuKeepChatsInStackInfo">Відкриття іншого чату не закриватиме попередні</string>
@@ -533,7 +533,7 @@
     <string name="InuCodeLanguage">Мова коду</string>
     <string name="InuBuildFull">Повна</string>
     <string name="InuBuildPluginless">Без плагінів</string>
-    <string name="InuVersion">Inugram v%1$s (%4$s, на основі %2$s, збірка %3$s)</string>
+    <string name="InuVersion">FAgram v%1$s (%4$s, на основі %2$s, збірка %3$s)</string>
     <string name="InuSearchFilter">Фільтр за типом медіа</string>
     <string name="InuSearchFilterPhotos">Фото</string>
     <string name="InuSearchFilterVideos">Відео</string>
@@ -605,11 +605,11 @@
     <string name="InuBackupImportSheetCancel">Ні, залишити як є</string>
     <string name="InuBackupSettings">Резервне копіювання та скидання</string>
     <string name="InuBackupReset">Скинути налаштування</string>
-    <string name="InuBackupResetConfirm">Усі налаштування Inugram буде скинуто до значень за замовчуванням. Ваші чати, акаунти та власні налаштування Telegram залишаться незмінними.\n\nЦю дію неможливо скасувати.</string>
+    <string name="InuBackupResetConfirm">Усі налаштування FAgram буде скинуто до значень за замовчуванням. Ваші чати, акаунти та власні налаштування Telegram залишаться незмінними.\n\nЦю дію неможливо скасувати.</string>
     <string name="InuBackupResetSuccess">Скинуто %1$d налаштувань</string>
     <string name="InuBackupResetNoChanges">Налаштування вже мають значення за замовчуванням</string>
     <string name="InuCloudSync">Хмарна синхронізація</string>
-    <string name="InuCloudSyncDesc">Збережіть налаштування Inugram у хмарі Telegram та відновіть їх на іншому пристрої.\n\nВикористовується [CloudStorage API](https://core.telegram.org/bots/webapps#cloudstorage), ваші дані ніколи не надсилаються на наші сервери.</string>
+    <string name="InuCloudSyncDesc">Збережіть налаштування FAgram у хмарі Telegram та відновіть їх на іншому пристрої.\n\nВикористовується [CloudStorage API](https://core.telegram.org/bots/webapps#cloudstorage), ваші дані ніколи не надсилаються на наші сервери.</string>
     <string name="InuCloudSyncNow">Синхронізувати зараз</string>
     <string name="InuCloudSyncing">Синхронізація…</string>
     <string name="InuCloudRestore">Відновити з хмари</string>
@@ -654,7 +654,7 @@
     <string name="InuMentionInsertTitle">Вставити згадку</string>
     <string name="InuPasscode">Код-пароль</string>
     <string name="InuPasscodeNeeded">Спочатку налаштуйте код-пароль Telegram.</string>
-    <string name="InuPasscodeShowInSettings">Показувати в налаштуваннях Inugram</string>
+    <string name="InuPasscodeShowInSettings">Показувати в налаштуваннях FAgram</string>
     <string name="InuPasscodeShowInSettingsInfo">Якщо вимкнено, цю сторінку можна відкрити **лише** за посиланням нижче. Збережіть його зараз — після створення воно не змінюється.</string>
     <string name="InuPasscodeAccountsInfo">Кожен акаунт може мати свій код-пароль. Введення його на екрані розблокування переключає на цей акаунт.</string>
     <string name="InuPasscodeStateNone">Не налаштовано</string>
@@ -704,7 +704,7 @@
     <string name="InuGoToMessagePrompt">ID повідомлення</string>
     <string name="InuPrivacySecurity">Конфіденційність і безпека</string>
     <string name="InuPerAccountPasscode">Код-пароль для кожного акаунта</string>
-    <string name="InuHideInugramSettings">Приховати налаштування Inugram</string>
+    <string name="InuHideInugramSettings">Приховати налаштування FAgram</string>
     <string name="InuParanoiaDisableNotifications">Вимкнути сповіщення</string>
     <string name="InuParanoiaHideOtherAccounts">Приховати інші акаунти</string>
     <string name="InuParanoiaHideFolders">Приховати папки</string>
@@ -712,7 +712,7 @@
     <string name="InuParanoiaHideStars">Приховати Telegram Stars</string>
     <string name="InuParanoiaHideGram">Приховати GRAM</string>
     <string name="InuParanoiaDisguise">Маскування під Telegram</string>
-    <string name="InuParanoiaDisguiseInfo">Змінюються лише значок та назва у лаунчері. Через обмеження Android сповіщення та назва всередині додатка все одно показують «Inugram».</string>
+    <string name="InuParanoiaDisguiseInfo">Змінюються лише значок та назва у лаунчері. Через обмеження Android сповіщення та назва всередині додатка все одно показують «FAgram».</string>
     <string name="InuDisguiseName" translatable="false">Telegram</string>
     <string name="InuParanoiaMode">Режим параної</string>
     <string name="InuParanoiaModeInfo">Режим параної дозволяє підготуватися до перевірки телефона сторонніми: він приховує будь-які небажані чати та, за бажанням, маскує додаток під офіційний клієнт.</string>
@@ -737,17 +737,17 @@
     <string name="InuBotSettings">Налаштування ботів</string>
     <string name="InuBotHelp">Допомога по ботах</string>
     <string name="InuSimulateOom">Симулювати збій нестачі пам\'яті (OOM)</string>
-    <string name="InuCrashTitle">Inugram аварійно завершив роботу минулого разу</string>
-    <string name="InuCrashTitleOom">В Inugram закінчилася пам\'ять</string>
+    <string name="InuCrashTitle">FAgram аварійно завершив роботу минулого разу</string>
+    <string name="InuCrashTitleOom">В FAgram закінчилася пам\'ять</string>
     <string name="InuCrashDesc">Перепрошуємо за це. Ви можете надіслати звіт про збій розробнику, щоб допомогти усунути проблему.</string>
     <string name="InuCrashDescOom">Перепрошуємо. Звичайні журнали збоїв мало чим допоможуть у разі вичерпання пам\'яті — натомість потрібен дамп купи (heap dump).</string>
     <string name="InuCrashDescHeapDump">Також збережено дамп купи. НЕ ДІЛІТЬСЯ НИМ! Він містить особисті дані! За бажанням ви можете переглянути його самостійно та поділитися знахідками — це дуже допоможе.</string>
-    <string name="InuCrashOomEnableLogs">Увімкніть режим налагодження в Налаштуваннях Inugram > Про додаток, щоб створювати дамп купи (heap dump) у разі кожного наступного OOM.</string>
+    <string name="InuCrashOomEnableLogs">Увімкніть режим налагодження в Налаштуваннях FAgram > Про додаток, щоб створювати дамп купи (heap dump) у разі кожного наступного OOM.</string>
     <string name="InuCrashShare">Поділитися звітом про збій</string>
     <string name="InuCrashShareHeapDump">Зберегти дамп купи</string>
     <string name="InuCrashDiscard">Скасувати</string>
     <string name="InuCrashChannel">Відновлення після збою</string>
-    <string name="InuCrashNotifTitle">Inugram аварійно завершив роботу</string>
+    <string name="InuCrashNotifTitle">FAgram аварійно завершив роботу</string>
     <string name="InuCrashNotifText">Натисніть для перезапуску</string>
     <string name="InuLogs">Відладка</string>
     <string name="InuLogsEnabled">Режим налагодження</string>

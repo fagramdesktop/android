@@ -35,7 +35,7 @@ test {
 
 
 if (rootProject.ext.inuPluginless) {
-    sourceSets.main.kotlin.exclude('xie/fa/gram/core/plugins/**')
+    sourceSets.main.kotlin.exclude('**/plugins/**')
     sourceSets.main.resources.exclude('tl_tables.txt')
-    sourceSets.test.kotlin.exclude('xie/fa/gram/core/plugins/**')
+    sourceSets.test.kotlin.exclude('**/plugins/**')
 }

@@ -2,7 +2,7 @@
 <resources>
     <string name="InuOpenInDiscussion">Открыть в обсуждении</string>
     <string name="InuBanUserConfirm">Заблокировать %1$s в этой группе?</string>
-    <string name="InuSettings">Настройки Inugram</string>
+    <string name="InuSettings">Настройки FAgram</string>
     <string name="InuSettingsInfo">Что делает эта собачонка?</string>
     <string name="InuExperimental">Экспериментальное</string>
     <string name="InuGeneral">Основные</string>
@@ -444,7 +444,7 @@
     <string name="InuFormattingPopupDivider">——————</string>
     <string name="InuCut">Вырезать</string>
     <string name="InuCodeLanguage">Язык кода</string>
-    <string name="InuVersion">Inugram v%1$s (%4$s, на основе %2$s, сборка %3$s)</string>
+    <string name="InuVersion">FAgram v%1$s (%4$s, на основе %2$s, сборка %3$s)</string>
     <string name="InuBuildFull">Полная</string>
     <string name="InuBuildPluginless">Без плагинов</string>
 
@@ -518,7 +518,7 @@
     <string name="InuBackupImportSheetCancel">Нет, оставить как есть</string>
     <string name="InuBackupSettings">Резервная копия и сброс</string>
     <string name="InuBackupReset">Сбросить настройки</string>
-    <string name="InuBackupResetConfirm">Все настройки Inugram будут сброшены до значений по умолчанию. Ваши чаты, аккаунты и собственные настройки Telegram не изменятся.\n\nЭто действие нельзя отменить.</string>
+    <string name="InuBackupResetConfirm">Все настройки FAgram будут сброшены до значений по умолчанию. Ваши чаты, аккаунты и собственные настройки Telegram не изменятся.\n\nЭто действие нельзя отменить.</string>
     <string name="InuBackupResetSuccess">Сброшено настроек: %1$d</string>
     <string name="InuBackupResetNoChanges">Настройки уже имеют значения по умолчанию</string>
     <string name="InuCloudSync">Облачная синхронизация</string>
@@ -569,7 +569,7 @@
 
     <string name="InuPasscode">Код-пароль</string>
     <string name="InuPasscodeNeeded">Сначала настройте код-пароль Telegram.</string>
-    <string name="InuPasscodeShowInSettings">Показывать в настройках inugram</string>
+    <string name="InuPasscodeShowInSettings">Показывать в настройках FAgram</string>
     <string name="InuPasscodeShowInSettingsInfo">Когда выключено, эту страницу можно открыть **только** по ссылке ниже. Сохраните её сейчас — после создания она не меняется.</string>
     <string name="InuPasscodeAccountsInfo">У каждого аккаунта может быть свой код-пароль. Ввод его на экране блокировки разблокирует приложение и переключит на этот аккаунт.</string>
     <string name="InuPasscodeStateNone">Не настроен</string>
@@ -608,11 +608,11 @@
     <string name="InuMessageMenuReset">Сбросить по умолчанию</string>
     <string name="InuPrivacySecurity">Конфиденциальность и безопасность</string>
     <string name="InuPerAccountPasscode">Код-пароль для каждого аккаунта</string>
-    <string name="InuHideInugramSettings">Скрыть настройки inugram</string>
+    <string name="InuHideInugramSettings">Скрыть настройки FAgram</string>
     <string name="InuParanoiaDisableNotifications">Отключить уведомления</string>
     <string name="InuParanoiaHideOtherAccounts">Скрыть другие аккаунты</string>
     <string name="InuParanoiaDisguise">Маскировка под Telegram</string>
-    <string name="InuParanoiaDisguiseInfo">Меняются только иконка и имя в лаунчере. Из-за ограничений Android уведомления и имя внутри приложения по-прежнему показывают «Inugram».</string>
+    <string name="InuParanoiaDisguiseInfo">Меняются только иконка и имя в лаунчере. Из-за ограничений Android уведомления и имя внутри приложения по-прежнему показывают «FAgram».</string>
     <string name="InuParanoiaMode">Режим паранойи</string>
     <string name="InuParanoiaModeInfo">Режим паранойи позволяет «подготовиться» к тому, что кто-то заглянет в ваш телефон: он скрывает любые «опасные» чаты и при желании маскирует приложение под стандартное.</string>
     <string name="InuParanoiaLauncherShortcut">Ярлык на иконке лаунчера</string>
@@ -700,7 +700,7 @@
     <string name="InuConfirmReactionText">Отправить реакцию %1$s в **%2$s**?</string>
     <string name="InuNotificationIcon">Иконка уведомления</string>
     <string name="InuNotificationIconTelegram">Telegram</string>
-    <string name="InuNotificationIconInugram">Inugram</string>
+    <string name="InuNotificationIconInugram">FAgram</string>
     <string name="InuNothingToTranslate">Нет сообщений для перевода.</string>
     <string name="InuAlreadyInTargetLanguage">Это сообщение уже на %1$s.</string>
     <string name="InuVoiceRecorder">Запись голоса / кружочков</string>
@@ -734,12 +734,12 @@
     <string name="InuBotSettings">Настройки бота</string>
     <string name="InuBotHelp">Помощь бота</string>
 
-    <string name="InuCrashTitle">Inugram упал в прошлый раз</string>
+    <string name="InuCrashTitle">FAgram упал в прошлый раз</string>
     <string name="InuCrashDesc">Извиняемся. Вы можете поделиться логом краша с разработчиком, чтобы помочь его исправить.</string>
     <string name="InuCrashShare">Поделиться логом</string>
     <string name="InuCrashDiscard">Отбросить</string>
     <string name="InuCrashChannel">Восстановление после краша</string>
-    <string name="InuCrashNotifTitle">Inugram упал</string>
+    <string name="InuCrashNotifTitle">FAgram упал</string>
     <string name="InuCrashNotifText">Нажмите для перезапуска</string>
 
     <string name="InuLogs">Отладка</string>
@@ -792,9 +792,9 @@
     <string name="InuStripTrackingParamsSourceRow">Источник фильтра</string>
 
     <string name="InuSimulateOom">Симулировать OOM-краш</string>
-    <string name="InuCrashTitleOom">Inugram исчерпал память</string>
+    <string name="InuCrashTitleOom">FAgram исчерпал память</string>
     <string name="InuCrashDescOom">Извиняемся. Логи краша не очень полезны при нехватке памяти — тут помогает хипдамп.</string>
-    <string name="InuCrashOomEnableLogs">Включи режим отладки в Настройках Inugram > О приложении, чтобы создавать хипдамп при каждом будущем OOM.</string>
+    <string name="InuCrashOomEnableLogs">Включи режим отладки в Настройках FAgram > О приложении, чтобы создавать хипдамп при каждом будущем OOM.</string>
     <string name="InuCrashDescHeapDump">Также сохранён дамп кучи. НЕ ОТПРАВЛЯЙТЕ ЕГО! Он содержит личные данные! Можете посмотреть его сами и поделиться находками — это сильно поможет.</string>
     <string name="InuCrashShareHeapDump">Сохранить дамп кучи</string>
 

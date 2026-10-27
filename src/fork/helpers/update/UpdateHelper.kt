@@ -72,6 +72,7 @@ object UpdateHelper {
 
     private val APK_RE = Regex("^(?:inugram|fagram)-(.+)-(\\d+)-(full|pluginless)\\.apk$", RegexOption.IGNORE_CASE)
     private val SHORT_SHA_RE = Regex("-([0-9a-f]{7,40})$")
+    private val SHA256_RE = Regex("""(?:SHA256|Hash):\s*([a-fA-F0-9]{64})""", RegexOption.IGNORE_CASE)
 
     @Volatile
     private var inflight = false
@@ -82,6 +83,14 @@ object UpdateHelper {
     @Volatile
     var pendingBetaUpdate: BetaUpdate? = null
         private set
+
+    @Volatile
+    var pendingSha256: String? = null
+        get() = field ?: InuConfig.UPDATE_PENDING_SHA256.value.ifEmpty { null }
+        set(value) {
+            field = value
+            InuConfig.UPDATE_PENDING_SHA256.value = value ?: ""
+        }
 
     // cached source message of the current pending update, set by applyUpdate. lets
     // startDownload skip the resolver+RPC dance when the update was detected this session.
@@ -127,6 +136,7 @@ object UpdateHelper {
     fun clearPending() {
         pendingBetaUpdate = null
         pendingSourceMessage = null
+        pendingSha256 = null
         isPendingStart = false
         SharedConfig.pendingAppUpdate = null
         SharedConfig.saveConfig()
@@ -420,6 +430,7 @@ object UpdateHelper {
         SharedConfig.saveConfig()
         pendingBetaUpdate = BetaUpdate(info.appVerName, info.verCode, null)
         pendingSourceMessage = msg
+        pendingSha256 = info.sha256
         return updateObj
     }
 
@@ -449,7 +460,8 @@ object UpdateHelper {
         val verName = match.groupValues[1]
         val verCode = match.groupValues[2].toIntOrNull() ?: return null
         val appVerName = verName.replace(SHORT_SHA_RE, "")
-        return ApkInfo(verCode, appVerName, doc)
+        val sha256 = SHA256_RE.find(msg.message.orEmpty())?.groups?.get(1)?.value?.trim()
+        return ApkInfo(verCode, appVerName, doc, sha256)
     }
 
     private fun currentVariant(): String = if (BuildConfig.INU_PLUGINLESS) "pluginless" else "full"
@@ -481,6 +493,7 @@ object UpdateHelper {
         val verCode: Int,
         val appVerName: String,
         val document: TLRPC.Document,
+        val sha256: String? = null,
     )
 
     private data class CurrentBuild(

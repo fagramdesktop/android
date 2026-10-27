@@ -272,6 +272,6 @@ await ensureGitExclude(worktreeDir, '.cxx')
 if (!pluginless) await cd(worktreeDir)`git config submodule.TMessagesProj_App/jni/lsplant.ignore all`
 const linkedAny = await linkForkSource(worktreeDir, pluginless)
 const generatedAny = await generateIconDrawables(worktreeDir)
-const generatedTl = pluginless ? false : await generateTl()
+const generatedTl = pluginless ? false : await generateTl(undefined, worktreeDir)
 const generatedGrants = pluginless ? false : await generateGrants()
 success(configuredBuild || taggedCache || linkedAny || generatedAny || generatedTl || generatedGrants || syncedSubmodules || patchedSubmodules ? 'Setup complete' : 'Up to date')

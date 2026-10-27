@@ -352,10 +352,15 @@ export async function getPatchSubject(repoDir: string, patchName: string) {
 }
 
 export async function generateStablePatchFromCommit(repoDir: string, commitId: string) {
-  const patch = await cd(repoDir)`git format-patch --stdout --ignore-submodules=none --zero-commit --no-signature --subject-prefix= -1 ${commitId}`
-  return patch.stdout
-    .replace(/^index [0-9a-f]+\.\.[0-9a-f]+( \d+)?$/gm, 'index 0000000..0000000$1')
-    .replace(/^Subject:.*(?:\n[ \t].*)+/m, m => m.replace(/\n[ \t]+/g, ' '))
+  const patch = await cd(repoDir)`git format-patch --stdout --full-index --ignore-submodules=none --zero-commit --no-signature --subject-prefix= -1 ${commitId}`
+  const sections = patch.stdout.split(/(?=^diff --git )/m)
+  const processed = sections.map((section) => {
+    if (section.includes('GIT binary patch')) {
+      return section
+    }
+    return section.replace(/^index [0-9a-f]+\.\.[0-9a-f]+( \d+)?$/gm, 'index 0000000..0000000$1')
+  }).join('')
+  return processed.replace(/^Subject:.*(?:\n[ \t].*)+/m, m => m.replace(/\n[ \t]+/g, ' '))
 }
 
 export async function getAllPatchCommitIds(repoDir: string) {

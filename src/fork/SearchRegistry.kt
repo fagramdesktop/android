@@ -9,6 +9,7 @@ import xie.fa.gram.ui.settings.BehaviorSettingsActivity
 import xie.fa.gram.ui.settings.ChatsSettingsActivity
 import xie.fa.gram.ui.settings.DialogsSettingsActivity
 import xie.fa.gram.ui.settings.InuSettingsActivity
+import xie.fa.gram.ui.settings.LastFmSettingsActivity
 import xie.fa.gram.ui.settings.MessagesSettingsActivity
 import xie.fa.gram.ui.settings.PrivacySecurityActivity
 import xie.fa.gram.ui.settings.SettingsPageActivity

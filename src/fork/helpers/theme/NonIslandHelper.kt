@@ -164,6 +164,19 @@ object NonIslandHelper {
     }
 
     @JvmStatic
+    fun applyFilterTabBarBottom(tabsView: FilterTabsView, contentView: SizeNotifierFrameLayout) {
+        if (!foldersBar()) return
+        tabsView.setBlurredBackground(null)
+        tabsView.background = null
+        tabsView.inu_blurHelper = BlurBehindHelper(tabsView, contentView, Theme.key_windowBackgroundWhite, isTop = false, drawBottomDivider = false)
+        tabsView.setPadding(0, dp(1f), 0, 0)
+        val lp = tabsView.layoutParams as? FrameLayout.LayoutParams ?: return
+        lp.height = dp(FOLDERS_BAR_HEIGHT_DP.toFloat())
+        lp.leftMargin = 0
+        lp.rightMargin = 0
+    }
+
+    @JvmStatic
     fun applyGlobalSearchBar(field: FragmentSearchField, contentView: SizeNotifierFrameLayout) {
         if (!globalSearch()) return
         field.setupBlurredBackground(null)

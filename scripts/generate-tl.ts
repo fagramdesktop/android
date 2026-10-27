@@ -1,4 +1,5 @@
 import type { JavaClass, JavaField, ParseWarning } from './tl-parser.js'
+import fsSync from 'node:fs'
 import fs from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -10,8 +11,30 @@ import { parseJavaFile } from './tl-parser.js'
 // generates sdk/types/android.tl.d.ts and InuCore's tl_tables.txt from stock's tgnet sources.
 // both are gitignored; see docs at the top of each generated file.
 
-const tgnetDir = join(worktreeDir, 'TMessagesProj/src/main/java/org/telegram/tgnet')
-const schemaDir = join(worktreeDir, 'TMessagesProj_AppTests/tlscheme')
+let configuredWorktreeDir: string | null = null
+
+function getEffectiveWorktreeDir(): string {
+  if (configuredWorktreeDir && fsSync.existsSync(join(configuredWorktreeDir, 'TMessagesProj'))) {
+    return configuredWorktreeDir
+  }
+  if (fsSync.existsSync(join(worktreeDir, 'TMessagesProj'))) {
+    return worktreeDir
+  }
+  const pluginlessDir = join(rootDir, 'worktree-pluginless')
+  if (fsSync.existsSync(join(pluginlessDir, 'TMessagesProj'))) {
+    return pluginlessDir
+  }
+  return configuredWorktreeDir ?? worktreeDir
+}
+
+function getTgnetDir(): string {
+  return join(getEffectiveWorktreeDir(), 'TMessagesProj/src/main/java/org/telegram/tgnet')
+}
+
+function getSchemaDir(): string {
+  return join(getEffectiveWorktreeDir(), 'TMessagesProj_AppTests/tlscheme')
+}
+
 const outFile = join(rootDir, 'sdk/types/android.tl.d.ts')
 const tablesFile = join(rootDir, 'src/core/src/main/resources/tl_tables.txt')
 // shipped with the types package: the cli has no worktree to read the schema out of
@@ -34,6 +57,7 @@ interface SchemaEntry {
  * defined its id.
  */
 async function loadSchema(): Promise<Map<number, SchemaEntry>> {
+  const schemaDir = getSchemaDir()
   const files = (await fs.readdir(schemaDir))
     .filter(f => /^\d+\.json$/.test(f))
     .map(f => Number.parseInt(f, 10))
@@ -107,6 +131,7 @@ interface TlClass extends JavaClass {
 }
 
 async function parseAll(warnings: ParseWarning[]) {
+  const tgnetDir = getTgnetDir()
   const schemaFiles = [...new Set([
     join(tgnetDir, 'TLRPC.java'),
     ...await glob('tl/**/*.java', { cwd: tgnetDir, absolute: true }),
@@ -677,8 +702,9 @@ function renderTree(tree: NsTree, indent: string): string[] {
  * hazard here, and `inu.info().layer` is the runtime half of the same answer.
  */
 async function readStamp() {
-  const tlrpc = await fs.readFile(join(tgnetDir, 'TLRPC.java'), 'utf8')
-  const props = await fs.readFile(join(worktreeDir, 'gradle.properties'), 'utf8')
+  const effectiveDir = getEffectiveWorktreeDir()
+  const tlrpc = await fs.readFile(join(getTgnetDir(), 'TLRPC.java'), 'utf8')
+  const props = await fs.readFile(join(effectiveDir, 'gradle.properties'), 'utf8')
   return {
     layer: /public static final int LAYER = (\d+)/.exec(tlrpc)?.[1] ?? 'unknown',
     appVersion: /^APP_VERSION_NAME=(.+)$/m.exec(props)?.[1]?.trim() ?? 'unknown',
@@ -728,7 +754,8 @@ function makeHeader(stamp: { layer: string, appVersion: string }) {
  * resolves whether either output changed. [int53CandidatesFile] is another overrides file (e.g.
  * upstream mtcute's) whose entries are reported where they hit a long field ours leaves a string
  */
-export async function generateTl(int53CandidatesFile?: string): Promise<boolean> {
+export async function generateTl(int53CandidatesFile?: string, worktree?: string): Promise<boolean> {
+  if (worktree) configuredWorktreeDir = worktree
   const warnings: ParseWarning[] = []
   step('parsing tgnet sources')
   const raw = await parseAll(warnings)
