@@ -1056,4 +1056,15 @@
     <!-- Always show downloads button -->
     <string name="InuAlwaysShowDownloadsButton">Always show downloads button</string>
     <string name="InuAlwaysShowDownloadsButtonInfo">Show the downloads icon in the top action bar even when there are no active downloads</string>
+
+    <!-- Content & restriction bypasses -->
+    <string name="InuContentRestrictions">Restrictions &amp; Media</string>
+    <string name="InuAntiScreenshotNotification">Block screenshot notifications</string>
+    <string name="InuAntiScreenshotNotificationInfo">Prevents screenshot notifications from being sent in private and secret chats</string>
+    <string name="InuAntiDisappearingMedia">Keep disappearing media</string>
+    <string name="InuAntiDisappearingMediaInfo">Prevents view-once and expiring photos, videos, and voice messages from disappearing</string>
+    <string name="InuBypassContentRestrictions">Bypass content restrictions</string>
+    <string name="InuBypassContentRestrictionsInfo">Allow copying, saving, and forwarding from restricted chats and channels</string>
+    <string name="InuBypassChannelRestrictions">Bypass channel restrictions</string>
+    <string name="InuBypassChannelRestrictionsInfo">Allow opening restricted, copyright-flagged, or sensitive channels and content</string>
 </resources>

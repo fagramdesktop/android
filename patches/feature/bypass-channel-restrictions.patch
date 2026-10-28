@@ -1,0 +1,499 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Wed, 28 Oct 2026 05:47:37 +0530
+Subject: Bypass channel restrictions
+
+---
+ .../org/telegram/messenger/MessageObject.java | 38 +++++++++++-----
+ .../messenger/MessagesController.java         | 45 +++++++++++++++++--
+ .../messenger/TranslateController.java        |  4 +-
+ .../telegram/ui/Cells/ChatMessageCell.java    | 10 ++---
+ .../org/telegram/ui/Cells/DialogCell.java     |  6 +--
+ .../ui/Cells/SharedPhotoVideoCell.java        |  2 +-
+ .../ui/Cells/SharedPhotoVideoCell2.java       |  2 +-
+ .../java/org/telegram/ui/ChatActivity.java    |  8 ++--
+ .../telegram/ui/Components/AlertsCreator.java |  3 ++
+ .../java/org/telegram/ui/LaunchActivity.java  |  3 ++
+ .../java/org/telegram/ui/PhotoViewer.java     |  4 +-
+ 11 files changed, 94 insertions(+), 31 deletions(-)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+@@ -652,6 +652,7 @@ public class MessageObject {
+ 
+     public Boolean isSensitiveCached;
+     public boolean isSensitive() {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) return false;
+         if (xie.fa.gram.InuConfig.DISABLE_SENSITIVE.getValue()) return false;
+         if (isSensitiveCached != null) return isSensitiveCached;
+         if (messageOwner == null) return false;
+@@ -693,6 +694,9 @@ public class MessageObject {
+     }
+ 
+     public boolean isHiddenSensitive() {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return isSensitive() && !MessagesController.getInstance(currentAccount).showSensitiveContent();
+     }
+ 
+@@ -4562,11 +4566,11 @@ public class MessageObject {
+     }
+ 
+     public boolean hasInlineBotButtons() {
+-        return !isRestrictedMessage && !isRepostPreview && messageOwner != null && (messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows.isEmpty() || getInlineBotButtons() != null);
++        return !inu_isRestrictedMessage() && !isRepostPreview && messageOwner != null && (messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows.isEmpty() || getInlineBotButtons() != null);
+     }
+ 
+     public void measureInlineBotButtons() {
+-        if (isRestrictedMessage) {
++        if (inu_isRestrictedMessage()) {
+             return;
+         }
+         wantedBotKeyboardWidth = 0;
+@@ -6047,11 +6051,11 @@ public class MessageObject {
+             }
+         } else {
+             isRestrictedMessage = false;
+-            String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageOwner.restriction_reason);
+-            if (!TextUtils.isEmpty(restrictionReason)) {
++            String restrictionReason = messageOwner != null ? MessagesController.getInstance(currentAccount).getRestrictionReason(messageOwner.restriction_reason) : null;
++            if (!xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue() && !TextUtils.isEmpty(restrictionReason)) {
+                 messageText = restrictionReason;
+                 isRestrictedMessage = true;
+-            } else if (messageOwner.rich_message != null) {
++            } else if (messageOwner != null && messageOwner.rich_message != null) {
+                 messageText = formatRichMessage(messageOwner.rich_message, isOutOwner());
+                 messageText = AndroidUtilities.replaceNewLines(messageText);
+             } else if (!isMediaEmpty() && !isSponsored()) {
+@@ -6740,7 +6744,7 @@ public class MessageObject {
+             if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
+                 contentType = 10;
+                 type = TYPE_UNSUPPORTED;
+-            } else if (isRestrictedMessage) {
++            } else if (inu_isRestrictedMessage()) {
+                 type = TYPE_TEXT;
+             } else if (messageOwner.rich_message != null) {
+                 type = TYPE_ARTICLE;
+@@ -8050,7 +8054,7 @@ public class MessageObject {
+         if (text == null) {
+             return false;
+         }
+-        if (isRestrictedMessage || getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
++        if (inu_isRestrictedMessage() || getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
+             ArrayList<TLRPC.MessageEntity> entities = new ArrayList<>();
+             TLRPC.TL_messageEntityItalic entityItalic = new TLRPC.TL_messageEntityItalic();
+             entityItalic.offset = 0;
+@@ -11777,6 +11781,20 @@ public class MessageObject {
+         return chat != null && chat.noforwards;
+     }
+ 
++    public boolean inu_isRestrictedMessage() {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return false;
++        }
++        return isRestrictedMessage;
++    }
++
++    public static boolean inu_isRestrictedMessage(MessageObject messageObject) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return false;
++        }
++        return messageObject != null && messageObject.isRestrictedMessage;
++    }
++
+     public boolean canForwardMessage() {
+         if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
+             return true;
+@@ -12923,7 +12941,7 @@ public class MessageObject {
+     }
+ 
+     public boolean hasLinkMediaToMakeSmall() {
+-        final boolean hasLinkPreview = !isRestrictedMessage && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
++        final boolean hasLinkPreview = !inu_isRestrictedMessage() && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
+         final TLRPC.WebPage webpage = hasLinkPreview ? MessageObject.getMedia(messageOwner).webpage : null;
+         final String webpageType = webpage != null ? webpage.type : null;
+         return hasLinkPreview && !isGiveawayOrGiveawayResults() &&
+@@ -12944,7 +12962,7 @@ public class MessageObject {
+     }
+ 
+     public boolean isLinkMediaSmall() {
+-        final boolean hasLinkPreview = !isRestrictedMessage && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
++        final boolean hasLinkPreview = !inu_isRestrictedMessage() && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
+         final TLRPC.WebPage webpage = hasLinkPreview ? MessageObject.getMedia(messageOwner).webpage : null;
+         final String webpageType = webpage != null ? webpage.type : null;
+         return !(webpage != null && TextUtils.isEmpty(webpage.description) && TextUtils.isEmpty(webpage.title)) && (
+@@ -13677,7 +13695,7 @@ public class MessageObject {
+     }
+ 
+     public CharSequence getMessageTextToTranslate(GroupedMessages groupedMessages, int[] messageIdToTranslate) {
+-        if (translated || isRestrictedMessage) {
++        if (translated || inu_isRestrictedMessage()) {
+             return null;
+         }
+         if (summarized) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+@@ -7968,6 +7968,9 @@ public class MessagesController extends BaseController implements NotificationCe
+                 });
+             } else {
+                 AndroidUtilities.runOnUIThread(() -> {
++                    if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++                        return;
++                    }
+                     checkChannelError(error.text, chatId);
+                     loadingFullChats.remove(chatId);
+                 });
+@@ -17468,6 +17471,9 @@ public class MessagesController extends BaseController implements NotificationCe
+                 });
+             } else if (error != null) {
+                 AndroidUtilities.runOnUIThread(() -> {
++                    if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++                        return;
++                    }
+                     checkChannelError(error.text, channelId);
+                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onReceivedChannelDifference, channelId);
+                 });
+@@ -17480,6 +17486,9 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     private void checkChannelError(String text, long channelId) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return;
++        }
+         switch (text) {
+             case "CHANNEL_PRIVATE":
+                 getNotificationCenter().postNotificationName(NotificationCenter.chatInfoCantLoad, channelId, 0);
+@@ -23450,8 +23459,11 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public String getRestrictionReason(ArrayList<TLRPC.RestrictionReason> reasons) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return null;
++        }
+         if (xie.fa.gram.InuConfig.DISABLE_SENSITIVE.getValue()) return null;
+-        if (reasons.isEmpty()) {
++        if (reasons == null || reasons.isEmpty()) {
+             return null;
+         }
+         for (int a = 0, N = reasons.size(); a < N; a++) {
+@@ -23470,6 +23482,7 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public boolean isSensitive(ArrayList<TLRPC.RestrictionReason> reasons) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) return false;
+         if (xie.fa.gram.InuConfig.DISABLE_SENSITIVE.getValue()) return false;
+         if (reasons == null || reasons.isEmpty()) {
+             return false;
+@@ -23489,6 +23502,12 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public void checkSensitive(BaseFragment fragment, long did, Runnable done, Runnable canceled) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            if (done != null) {
++                done.run();
++            }
++            return;
++        }
+         ArrayList<TLRPC.RestrictionReason> reasons = null;
+         if (did < 0) {
+             TLRPC.Chat chat = getChat(-did);
+@@ -23596,6 +23615,9 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public static void showCantOpenAlert(BaseFragment fragment, String reason) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return;
++        }
+         if (fragment == null || fragment.getParentActivity() == null) {
+             return;
+         }
+@@ -23612,16 +23634,25 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public boolean checkCanOpenChat(Bundle bundle, BaseFragment fragment) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return true;
++        }
+         return checkCanOpenChat(bundle, fragment, null);
+     }
+ 
+     public boolean checkCanOpenChat(Bundle bundle, BaseFragment fragment, MessageObject originalMessage) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return true;
++        }
+         return checkCanOpenChat(bundle, fragment, originalMessage, null);
+     }
+ 
+     private final HashSet<Long> sensitiveAgreed = new HashSet<>();
+ 
+     public boolean checkCanOpenChat(Bundle bundle, BaseFragment fragment, MessageObject originalMessage, Browser.Progress progress) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return true;
++        }
+         if (bundle == null || fragment == null) {
+             return true;
+         }
+@@ -23644,8 +23675,10 @@ public class MessagesController extends BaseController implements NotificationCe
+         String reason;
+         if (chat != null) {
+             reason = getRestrictionReason(chat.restriction_reason);
+-        } else {
++        } else if (user != null) {
+             reason = getRestrictionReason(user.restriction_reason);
++        } else {
++            reason = null;
+         }
+         if (reason != null) {
+             showCantOpenAlert(fragment, reason);
+@@ -25422,7 +25455,7 @@ public class MessagesController extends BaseController implements NotificationCe
+                 progress.end();
+             }
+             if (cancelled[0]) return;
+-            final String restriction_reason = getRestrictionReason(bot.restriction_reason);
++            final String restriction_reason = bot != null ? getRestrictionReason(bot.restriction_reason) : null;
+             if (!TextUtils.isEmpty(restriction_reason)) {
+                 showCantOpenAlert(fragment, restriction_reason);
+                 return;
+@@ -25552,6 +25585,9 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public void setContentSettings(boolean showSensitiveContent) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            showSensitiveContent = true;
++        }
+         if (contentSettings != null) {
+             if (!contentSettings.sensitive_can_change) {
+                 return;
+@@ -25576,6 +25612,9 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public boolean showSensitiveContent() {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return true;
++        }
+         if (contentSettings != null && System.currentTimeMillis() - contentSettingsLoadedTime < 1000 * 60 * 60) {
+             return contentSettings.sensitive_enabled;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java b/TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java
+@@ -143,7 +143,7 @@ public class TranslateController extends BaseController {
+             messageObject.messageOwner != null &&
+             messageObject.messageOwner.summary_from_language != null &&
+             !messageObject.isOutOwner() &&
+-            !messageObject.isRestrictedMessage &&
++            !MessageObject.inu_isRestrictedMessage(messageObject) &&
+             !messageObject.isSponsored() &&
+             (
+                 messageObject.type == MessageObject.TYPE_TEXT ||
+@@ -166,7 +166,7 @@ public class TranslateController extends BaseController {
+             messageObject != null &&
+             messageObject.messageOwner != null &&
+             !messageObject.isOutOwner() &&
+-            !messageObject.isRestrictedMessage &&
++            !MessageObject.inu_isRestrictedMessage(messageObject) &&
+             !messageObject.isSponsored() &&
+             (
+                 messageObject.type == MessageObject.TYPE_TEXT ||
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+@@ -7459,7 +7459,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                         hasInvoicePrice = false;
+                     }
+                 }
+-                hasLinkPreview = !messageObject.isRestrictedMessage && !xie.fa.gram.helpers.chat.BlockedMessagesHelper.shouldSpoil(messageObject) && MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageObject.messageOwner).webpage instanceof TLRPC.TL_webPage;
++                hasLinkPreview = !MessageObject.inu_isRestrictedMessage(messageObject) && !xie.fa.gram.helpers.chat.BlockedMessagesHelper.shouldSpoil(messageObject) && MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageObject.messageOwner).webpage instanceof TLRPC.TL_webPage;
+                 TLRPC.WebPage webpage = hasLinkPreview ? MessageObject.getMedia(messageObject.messageOwner).webpage : null;
+                 if (messageObject.isStoryMention()) {
+                     hasLinkPreview = true;
+@@ -9196,7 +9196,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                             reactionsLayoutInBubble.totalHeight += dp(12);
+                             reactionsLayoutInBubble.positionOffsetY -= dp(12);
+                         }
+-                        if (!messageObject.isRestrictedMessage && messageObject.caption != null) {
++                        if (!MessageObject.inu_isRestrictedMessage(messageObject) && messageObject.caption != null) {
+                             reactionsLayoutInBubble.positionOffsetY += dp(14);
+                         }
+                         totalHeight += reactionsLayoutInBubble.totalHeight;
+@@ -9306,7 +9306,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                             reactionsLayoutInBubble.totalHeight += dp(12);
+                             reactionsLayoutInBubble.positionOffsetY -= dp(12);
+                         }
+-                        if (!messageObject.isRestrictedMessage && messageObject.caption != null) {
++                        if (!MessageObject.inu_isRestrictedMessage(messageObject) && messageObject.caption != null) {
+                             reactionsLayoutInBubble.positionOffsetY += dp(!drawCommentButton ? 14 : 1);
+                         }
+                         totalHeight += reactionsLayoutInBubble.totalHeight;
+@@ -10631,7 +10631,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                     width -= dp(24);
+                 }
+                 int widthForCaption = width - dp(31 + (currentMessageObject.type != MessageObject.TYPE_ROUND_VIDEO ? 14 : 0)) - getExtraTextX() * 2;
+-                if (!messageObject.isRestrictedMessage && captionLayout == null && (messageObject.caption != null || messageObject.isVoiceTranscriptionOpen())) {
++                if (!MessageObject.inu_isRestrictedMessage(messageObject) && captionLayout == null && (messageObject.caption != null || messageObject.isVoiceTranscriptionOpen())) {
+                     currentCaption = messageObject.isVoiceTranscriptionOpen() ? messageObject.getVoiceTranscription() : messageObject.caption;
+                     if (currentCaption != null && !TextUtils.isEmpty(messageObject.messageOwner.voiceTranscription) && currentMessageObject.isVoiceTranscriptionOpen() && !currentMessageObject.messageOwner.voiceTranscriptionFinal) {
+                         currentCaption += " ";
+@@ -10811,7 +10811,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+             }
+ 
+             final int separatorHeight = dp(4 + 4);
+-            if (!messageObject.isRestrictedMessage && !messageObject.isRepostPreview && (currentPosition == null || currentMessagesGroup != null && currentMessagesGroup.isDocuments && currentPosition.last) && (inlineButtons != null) && !messageObject.hasExtendedMedia()) {
++            if (!MessageObject.inu_isRestrictedMessage(messageObject) && !messageObject.isRepostPreview && (currentPosition == null || currentMessagesGroup != null && currentMessagesGroup.isDocuments && currentPosition.last) && (inlineButtons != null) && !messageObject.hasExtendedMedia()) {
+                 int rows, separators;
+ 
+                 if (inlineButtons != null) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/DialogCell.java
+@@ -1594,7 +1594,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+                     }
+                 }
+                 messageString = formatTopicsNames();
+-                String restrictionReason = message != null ? MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason) : null;
++                String restrictionReason = message != null && message.messageOwner != null ? MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason) : null;
+                 buttonString = message != null ? getMessageStringFormatted(messageFormatType, restrictionReason, messageNameString, true) : "";
+                 if (applyName && buttonString.length() >= 0 && messageNameString != null) {
+                     SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(buttonString);
+@@ -1710,7 +1710,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+                             }
+                         }
+                     } else {
+-                        String restrictionReason = MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason);
++                        String restrictionReason = message != null && message.messageOwner != null ? MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason) : null;
+                         TLRPC.User fromUser = null;
+                         TLRPC.Chat fromChat = null;
+                         long fromId = message.getFromChatId();
+@@ -5753,7 +5753,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
+         if (message == null) {
+             return;
+         }
+-        String restrictionReason = MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason);
++        String restrictionReason = message != null && message.messageOwner != null ? MessagesController.getInstance(message.currentAccount).getRestrictionReason(message.messageOwner.restriction_reason) : null;
+         if (message != null && message.messageOwner != null && message.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+             thumbsCount = 0;
+             hasVideoThumb = false;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell.java
+@@ -183,7 +183,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
+         public void setMessageObject(MessageObject messageObject) {
+             currentMessageObject = messageObject;
+             imageView.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(messageObject), false);
+-            String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
++            String restrictionReason = messageObject != null && messageObject.messageOwner != null ? MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason) : null;
+             if (!TextUtils.isEmpty(restrictionReason)) {
+                 videoInfoContainer.setVisibility(INVISIBLE);
+                 imageView.setImageResource(R.drawable.photo_placeholder_in);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell2.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell2.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell2.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/SharedPhotoVideoCell2.java
+@@ -322,7 +322,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
+ 
+         final ImageReceiver imageReceiver = fullSize ? imageReceiverFullSize : this.imageReceiver;
+ 
+-        String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
++        String restrictionReason = messageObject != null && messageObject.messageOwner != null ? MessagesController.getInstance(currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason) : null;
+         String imageFilter;
+         int stride;
+         int width = (int) (AndroidUtilities.displaySize.x / parentColumnsCount / AndroidUtilities.density);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+@@ -15454,7 +15454,7 @@ public class ChatActivity extends BaseFragment implements
+                 final SimpleTextView replyObjectTextView = replyLayout.current().obj;
+                 final SimpleTextView replyObjectHintTextView = replyLayout.current().objHint;
+ 
+-                String restrictionReason = MessagesController.getInstance(currentAccount).getRestrictionReason(messageObjectToReply.messageOwner.restriction_reason);
++                String restrictionReason = messageObjectToReply != null && messageObjectToReply.messageOwner != null ? MessagesController.getInstance(currentAccount).getRestrictionReason(messageObjectToReply.messageOwner.restriction_reason) : null;
+                 chatActivityEnterView.setForceShowSendButton(false, false);
+                 CharSequence name = null;
+                 if (messageObjectToReply.isForwarded() && messageObjectToReply.getDialogId() != dialog_id) {
+@@ -15930,7 +15930,7 @@ public class ChatActivity extends BaseFragment implements
+             TLRPC.PhotoSize photoSize = null;
+             TLRPC.PhotoSize thumbPhotoSize = null;
+             TLObject photoSizeObject = null;
+-            if (thumbMediaMessageObject != null && TextUtils.isEmpty(MessagesController.getInstance(currentAccount).getRestrictionReason(thumbMediaMessageObject.messageOwner.restriction_reason))) {
++            if (thumbMediaMessageObject != null && thumbMediaMessageObject.messageOwner != null && TextUtils.isEmpty(MessagesController.getInstance(currentAccount).getRestrictionReason(thumbMediaMessageObject.messageOwner.restriction_reason))) {
+                 photoSize = FileLoader.getClosestPhotoSizeWithSize(thumbMediaMessageObject.photoThumbs2, 320);
+                 thumbPhotoSize = FileLoader.getClosestPhotoSizeWithSize(thumbMediaMessageObject.photoThumbs2, AndroidUtilities.dp(40));
+                 photoSizeObject = thumbMediaMessageObject.photoThumbsObject2;
+@@ -31470,7 +31470,7 @@ public class ChatActivity extends BaseFragment implements
+         if (messageObject == null) {
+             return null;
+         }
+-        String restrictionReason = MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
++        String restrictionReason = messageObject.messageOwner != null ? MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason) : null;
+         if (!TextUtils.isEmpty(restrictionReason)) {
+             return restrictionReason;
+         }
+@@ -33961,7 +33961,7 @@ public class ChatActivity extends BaseFragment implements
+                 }
+             }
+         }
+-        String restrictionReason = MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
++        String restrictionReason = messageObject != null && messageObject.messageOwner != null ? MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason) : null;
+         if (!TextUtils.isEmpty(restrictionReason)) {
+             str.append(restrictionReason);
+         } else if (messageObject.caption != null) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/AlertsCreator.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/AlertsCreator.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/AlertsCreator.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/AlertsCreator.java
+@@ -803,6 +803,9 @@ public class AlertsCreator {
+     }
+ 
+     public static AlertDialog.Builder createNoAccessAlert(Context context, String title, String message, Theme.ResourcesProvider resourcesProvider) {
++        if (xie.fa.gram.InuConfig.BYPASS_CHANNEL_RESTRICTIONS.getValue()) {
++            return null;
++        }
+         AlertDialog.Builder builder = new AlertDialog.Builder(context);
+         builder.setTitle(title);
+         Map<String, Integer> colorsReplacement = new HashMap<>();
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
+@@ -6244,6 +6244,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
+     }
+ 
+     public Dialog showAlertDialog(AlertDialog.Builder builder) {
++        if (builder == null) {
++            return null;
++        }
+         try {
+             AlertDialog dialog = builder.show();
+             dialog.setCanceledOnTouchOutside(true);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
+@@ -14884,7 +14884,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+                     setItemVisible(editItem, canPaint, animated && !pipItemVisible && !shouldMasksItemBeVisible);
+                     setItemVisible(masksItem, shouldMasksItemBeVisible, !pipItemVisible);
+                 }
+-                String restrictionReason = MessagesController.getInstance(newMessageObject.currentAccount).getRestrictionReason(newMessageObject.messageOwner.restriction_reason);
++                String restrictionReason = newMessageObject != null && newMessageObject.messageOwner != null ? MessagesController.getInstance(newMessageObject.currentAccount).getRestrictionReason(newMessageObject.messageOwner.restriction_reason) : null;
+                 if (!TextUtils.isEmpty(restrictionReason)) {
+                     caption = restrictionReason;
+                 } else if (captionTranslated && newMessageObject.messageOwner != null && newMessageObject.messageOwner.translatedText != null && TextUtils.equals(newMessageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage())) {
+@@ -17066,7 +17066,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+             }
+ 
+             if (messageObject != null) {
+-                String restrictionReason = MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
++                String restrictionReason = messageObject.messageOwner != null ? MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason) : null;
+                 if (!TextUtils.isEmpty(restrictionReason)) {
+                     imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
+                     return;

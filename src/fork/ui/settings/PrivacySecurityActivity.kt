@@ -85,6 +85,41 @@ class PrivacySecurityActivity : SettingsPageActivity() {
         )
         items.add(UItem.asShadow(null))
 
+        items.add(UItem.asHeader(addExperimentalSpan(LocaleController.getString(R.string.InuContentRestrictions))))
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_ANTI_SCREENSHOT_NOTIFICATION,
+                R.string.InuAntiScreenshotNotification,
+                R.string.InuAntiScreenshotNotificationInfo,
+                InuConfig.ANTI_SCREENSHOT_NOTIFICATION.value,
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_ANTI_DISAPPEARING_MEDIA,
+                R.string.InuAntiDisappearingMedia,
+                R.string.InuAntiDisappearingMediaInfo,
+                InuConfig.ANTI_DISAPPEARING_MEDIA.value,
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_BYPASS_CONTENT_RESTRICTIONS,
+                R.string.InuBypassContentRestrictions,
+                R.string.InuBypassContentRestrictionsInfo,
+                InuConfig.BYPASS_CONTENT_RESTRICTIONS.value,
+            )
+        )
+        items.add(
+            mkTwoLineCheckItem(
+                TOGGLE_BYPASS_CHANNEL_RESTRICTIONS,
+                R.string.InuBypassChannelRestrictions,
+                R.string.InuBypassChannelRestrictionsInfo,
+                InuConfig.BYPASS_CHANNEL_RESTRICTIONS.value,
+            )
+        )
+        items.add(UItem.asShadow(null))
+
         items.add(UItem.asHeader(LocaleController.getString(R.string.InuStripTrackingParams)))
         items.add(
             UItem.asCheck(
@@ -176,6 +211,26 @@ class PrivacySecurityActivity : SettingsPageActivity() {
 
             TOGGLE_DISABLE_DRAFT_UPLOAD -> {
                 val new = InuConfig.DISABLE_DRAFT_UPLOAD.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_ANTI_SCREENSHOT_NOTIFICATION -> {
+                val new = InuConfig.ANTI_SCREENSHOT_NOTIFICATION.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_ANTI_DISAPPEARING_MEDIA -> {
+                val new = InuConfig.ANTI_DISAPPEARING_MEDIA.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_BYPASS_CONTENT_RESTRICTIONS -> {
+                val new = InuConfig.BYPASS_CONTENT_RESTRICTIONS.toggle()
+                (view as? NotificationsCheckCell)?.isChecked = new
+            }
+
+            TOGGLE_BYPASS_CHANNEL_RESTRICTIONS -> {
+                val new = InuConfig.BYPASS_CHANNEL_RESTRICTIONS.toggle()
                 (view as? NotificationsCheckCell)?.isChecked = new
             }
 
@@ -273,6 +328,10 @@ class PrivacySecurityActivity : SettingsPageActivity() {
         private val TOGGLE_RESOLVE_TRACKABLE_REDIRECTS = InuUtils.generateId()
         private val BUTTON_STRIP_TRACKING_PARAMS_SOURCE = InuUtils.generateId()
         private val TOGGLE_DISABLE_DRAFT_UPLOAD = InuUtils.generateId()
+        private val TOGGLE_ANTI_SCREENSHOT_NOTIFICATION = InuUtils.generateId()
+        private val TOGGLE_ANTI_DISAPPEARING_MEDIA = InuUtils.generateId()
+        private val TOGGLE_BYPASS_CONTENT_RESTRICTIONS = InuUtils.generateId()
+        private val TOGGLE_BYPASS_CHANNEL_RESTRICTIONS = InuUtils.generateId()
         private val TOGGLE_BIOMETRIC_DELETE_CHAT = InuUtils.generateId()
         private val TOGGLE_BIOMETRIC_LOGOUT = InuUtils.generateId()
         private val TOGGLE_BIOMETRIC_DEVICE_CREDENTIAL = InuUtils.generateId()
@@ -289,6 +348,10 @@ class PrivacySecurityActivity : SettingsPageActivity() {
                 SearchRegistry.Entry("strip-tracking-params-paste", R.string.InuStripTrackingParamsOnPaste, TOGGLE_STRIP_TRACKING_PARAMS_ON_PASTE),
                 SearchRegistry.Entry("resolve-trackable-redirects", R.string.InuResolveTrackableRedirects, TOGGLE_RESOLVE_TRACKABLE_REDIRECTS),
                 SearchRegistry.Entry("disable-draft-upload", R.string.InuDisableDraftUpload, TOGGLE_DISABLE_DRAFT_UPLOAD),
+                SearchRegistry.Entry("anti-screenshot-notification", R.string.InuAntiScreenshotNotification, TOGGLE_ANTI_SCREENSHOT_NOTIFICATION),
+                SearchRegistry.Entry("anti-disappearing-media", R.string.InuAntiDisappearingMedia, TOGGLE_ANTI_DISAPPEARING_MEDIA),
+                SearchRegistry.Entry("bypass-content-restrictions", R.string.InuBypassContentRestrictions, TOGGLE_BYPASS_CONTENT_RESTRICTIONS),
+                SearchRegistry.Entry("bypass-channel-restrictions", R.string.InuBypassChannelRestrictions, TOGGLE_BYPASS_CHANNEL_RESTRICTIONS),
                 SearchRegistry.Entry("biometric-confirm-delete-chat", R.string.InuBiometricConfirmDeleteChat, TOGGLE_BIOMETRIC_DELETE_CHAT),
                 SearchRegistry.Entry("biometric-confirm-logout", R.string.InuBiometricConfirmLogout, TOGGLE_BIOMETRIC_LOGOUT),
                 SearchRegistry.Entry("biometric-allow-device-credential", R.string.InuBiometricAllowDeviceCredential, TOGGLE_BIOMETRIC_DEVICE_CREDENTIAL),

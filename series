@@ -423,3 +423,7 @@ bugfix/update-version-comparison.patch
 feature/members-filter.patch
 feature/unlimited-pinned-chats.patch
 feature/always-show-downloads-button.patch
+feature/anti-screenshot-notification.patch
+feature/anti-disappearing-media.patch
+feature/bypass-content-restrictions.patch
+feature/bypass-channel-restrictions.patch

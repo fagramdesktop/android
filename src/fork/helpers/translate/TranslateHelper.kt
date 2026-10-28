@@ -187,7 +187,7 @@ object TranslateHelper {
             messageIdToTranslate[0] = source.realId
         }
         val noforwards = activity.isPeerNoForwards ||
-            selected.messageOwner?.noforwards == true ||
+            MessageObject.inu_isNoForwards(selected.messageOwner) ||
             selected.type == MessageObject.TYPE_PAID_MEDIA
 
         fun updateTranslateHint() {

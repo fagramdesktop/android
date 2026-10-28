@@ -1,0 +1,646 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Wed, 28 Oct 2026 04:56:39 +0530
+Subject: Allow copying and forwarding restricted content
+
+---
+ .../org/telegram/messenger/FileLoader.java    |  2 +-
+ .../org/telegram/messenger/MessageObject.java | 23 +++++++++--
+ .../messenger/MessagePreviewParams.java       |  6 ++-
+ .../messenger/MessagesController.java         | 15 +++++++
+ .../utils/EphemeralMessagesHelper.java        |  4 +-
+ .../telegram/ui/Cells/ChatMessageCell.java    |  4 +-
+ .../java/org/telegram/ui/ChatActivity.java    | 40 +++++++++++--------
+ .../org/telegram/ui/ChatEditActivity.java     |  2 +-
+ .../ui/Components/AudioPlayerAlert.java       |  2 +-
+ .../Paint/Views/MessageEntityView.java        |  2 +-
+ .../Components/SearchDownloadsContainer.java  |  4 +-
+ .../ui/Components/SharedMediaLayout.java      |  7 +++-
+ .../ui/Components/TranslateAlert2.java        |  3 ++
+ .../ui/Components/TranslateAlert3.java        |  3 ++
+ .../java/org/telegram/ui/PhotoViewer.java     | 10 ++---
+ .../java/org/telegram/ui/ProfileActivity.java |  5 ++-
+ .../org/telegram/ui/ProfileActivity2.java     |  2 +-
+ .../telegram/ui/Stars/StarsIntroActivity.java |  4 +-
+ .../telegram/ui/Stories/PeerStoriesView.java  |  2 +-
+ .../ui/Stories/recorder/StoryEntry.java       | 10 ++---
+ 20 files changed, 104 insertions(+), 46 deletions(-)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/FileLoader.java b/TMessagesProj/src/main/java/org/telegram/messenger/FileLoader.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/FileLoader.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/FileLoader.java
+@@ -1112,7 +1112,7 @@ public class FileLoader extends BaseController {
+             }
+             if (parentObject instanceof MessageObject) {
+                 messageObject = (MessageObject) parentObject;
+-                if (messageObject.isRoundVideo() || messageObject.isVoice() || messageObject.isAnyKindOfSticker() || messageObject.messageOwner.noforwards) {
++                if (messageObject.isRoundVideo() || messageObject.isVoice() || messageObject.isAnyKindOfSticker() || MessageObject.inu_isNoForwards(messageObject.messageOwner)) {
+                     return false;
+                 }
+             } else {
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+@@ -8526,7 +8526,7 @@ public class MessageObject {
+             return false;
+         } else if (searchType == ChatActivity.SEARCH_PUBLIC_POSTS) {
+             return true;
+-        } else if (messageOwner.noforwards) {
++        } else if (inu_isNoForwards(messageOwner)) {
+             return false;
+         } else if (messageOwner.fwd_from != null && !isOutOwner() && messageOwner.fwd_from.saved_from_peer != null && getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId()) {
+             return true;
+@@ -8797,7 +8797,7 @@ public class MessageObject {
+             return;
+         }
+         boolean hasUrls = applyEntities();
+-        boolean noforwards = messageOwner != null && messageOwner.noforwards;
++        boolean noforwards = inu_isNoForwards(messageOwner);
+         if (!noforwards) {
+             final long dialogId = getDialogId();
+             noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(dialogId);
+@@ -9293,7 +9293,7 @@ public class MessageObject {
+         public TextLayoutBlocks(MessageObject messageObject, @NonNull CharSequence text, TextPaint textPaint, int width) {
+             this.text = text;
+             textWidth = 0;
+-            boolean noforwards = messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.noforwards;
++            boolean noforwards = inu_isNoForwards(messageObject != null ? messageObject.messageOwner : null);
+             if (messageObject != null && !noforwards) {
+                 final long dialogId = messageObject.getDialogId();
+                 noforwards = MessagesController.getInstance(messageObject.currentAccount).isPeerNoForwards(dialogId);
+@@ -11763,7 +11763,24 @@ public class MessageObject {
+         return canEditMessageScheduleTime(currentAccount, messageOwner, chat);
+     }
+ 
++    public static boolean inu_isNoForwards(TLRPC.Message message) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
++        return message != null && message.noforwards;
++    }
++
++    public static boolean inu_isNoForwards(TLRPC.Chat chat) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
++        return chat != null && chat.noforwards;
++    }
++
+     public boolean canForwardMessage() {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return true;
++        }
+         if (isQuickReply()) return false;
+         if (type == TYPE_GIFT_STARS || type == TYPE_GIFT_THEME_UPDATE || type == TYPE_SUGGEST_BIRTHDAY || type == TYPE_GIFT_OFFER || type == TYPE_SHARING_OFFER || type == TYPE_COMMUNITY_CHANGED) return false;
+         return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && !messageOwner.noforwards;
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagePreviewParams.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagePreviewParams.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagePreviewParams.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagePreviewParams.java
+@@ -198,7 +198,11 @@ public class MessagePreviewParams {
+ 
+     public MessagePreviewParams(boolean secret, boolean noforwards, boolean monoforum) {
+         this.isSecret = secret;
+-        this.noforwards = secret || noforwards;
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            this.noforwards = false;
++        } else {
++            this.noforwards = secret || noforwards;
++        }
+         this.monoforum = monoforum;
+     }
+ 
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+@@ -6872,6 +6872,9 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public boolean isChatNoForwards(TLRPC.Chat chat) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         if (chat == null) {
+             return false;
+         }
+@@ -6885,18 +6888,30 @@ public class MessagesController extends BaseController implements NotificationCe
+     }
+ 
+     public boolean isChatNoForwards(long chatId) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return isChatNoForwards(getChat(chatId));
+     }
+ 
+     public boolean isPeerNoForwards(long dialogId) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return dialogId > 0 ? isUserNoForwards(dialogId) : isChatNoForwards(-dialogId);
+     }
+ 
+     public boolean isUserNoForwards(long userId) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return isUserNoForwards(getUserFull(userId));
+     }
+ 
+     public boolean isUserNoForwards(TLRPC.UserFull userFull) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         if (userFull == null) {
+             return false;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/utils/EphemeralMessagesHelper.java b/TMessagesProj/src/main/java/org/telegram/messenger/utils/EphemeralMessagesHelper.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/utils/EphemeralMessagesHelper.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/utils/EphemeralMessagesHelper.java
+@@ -28,7 +28,7 @@ public class EphemeralMessagesHelper extends BaseController {
+         TL_ephemeral.TL_ephemeralMessage ephemeralMessage = new TL_ephemeral.TL_ephemeralMessage();
+         ephemeralMessage.out = message.out;
+         ephemeralMessage.invert_media = message.invert_media;
+-        ephemeralMessage.noforwards = message.noforwards;
++        ephemeralMessage.noforwards = MessageObject.inu_isNoForwards(message);
+         ephemeralMessage.id = MessageObject.ephemeralMessageIdUnpack(message.id);
+         ephemeralMessage.from_id = message.from_id;
+         ephemeralMessage.peer_id = message.peer_id;
+@@ -68,7 +68,7 @@ public class EphemeralMessagesHelper extends BaseController {
+         message.date = ephemeralMessage.date;
+         message.message = ephemeralMessage.message;
+ 
+-        if (ephemeralMessage.noforwards) {
++        if (ephemeralMessage.noforwards && !xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
+             message.noforwards = true;
+             message.flags |= TLObject.FLAG_26;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+@@ -6998,7 +6998,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                 drawSideButton = checkNeedDrawShareButton(messageObject) ? 2 : 0;
+             } else if (messageObject.searchType == ChatActivity.SEARCH_MY_MESSAGES) {
+                 drawSideButton = 0;
+-            } else if (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || (messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) {
++            } else if (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || (messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner))) {
+                 drawSideButton = 0;
+                 if (isPinnedChat && !isRepliesChat && !messageObject.isSponsored()) {
+                     if (currentMessagesGroup != null && currentPosition != null) {
+@@ -12124,7 +12124,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+                 flagSecure = new FlagSecureReason(window, () ->
+                     currentMessageObject != null && currentMessageObject.messageOwner != null && (
+                         currentMessageObject.type == MessageObject.TYPE_PAID_MEDIA && (groupMedia == null || !groupMedia.hidden) ||
+-                        currentMessageObject.messageOwner.noforwards && !currentMessageObject.isEphemeral() ||
++                        MessageObject.inu_isNoForwards(currentMessageObject.messageOwner) && !currentMessageObject.isEphemeral() ||
+                         currentMessageObject.isVoiceOnce() ||
+                         currentMessageObject.hasRevealedExtendedMedia()
+                     )
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+@@ -3575,7 +3575,7 @@ public class ChatActivity extends BaseFragment implements
+             }
+             final boolean noforwards = (
+                 chatActivity != null && chatActivity.isPeerNoForwards() ||
+-                selectedView != null && selectedView.getMessageObject() != null && selectedView.getMessageObject().messageOwner != null && selectedView.getMessageObject().messageOwner.noforwards
++                selectedView != null && selectedView.getMessageObject() != null && selectedView.getMessageObject().messageOwner != null && MessageObject.inu_isNoForwards(selectedView.getMessageObject().messageOwner)
+             );
+             return !isFactCheck && (
+                 chatActivity != null && chatActivity.getCurrentEncryptedChat() == null &&
+@@ -3598,7 +3598,7 @@ public class ChatActivity extends BaseFragment implements
+             }
+             return chatActivity == null || !(
+                 !DialogObject.isEncryptedDialog(chatActivity.getDialogId()) && chatActivity.isPeerNoForwards() ||
+-                selectedView != null && selectedView.getMessageObject() != null && (selectedView.getMessageObject().messageOwner != null && selectedView.getMessageObject().messageOwner.noforwards)
++                selectedView != null && selectedView.getMessageObject() != null && (selectedView.getMessageObject().messageOwner != null && MessageObject.inu_isNoForwards(selectedView.getMessageObject().messageOwner))
+             );
+         }
+ 
+@@ -12469,11 +12469,14 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     private boolean hasSelectedNoforwardsMessage() {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         try {
+             for (int i = 0; i < selectedMessagesIds.length; ++i) {
+                 for (int j = 0; j < selectedMessagesIds[i].size(); ++j) {
+                     MessageObject msg = selectedMessagesIds[i].valueAt(j);
+-                    if (msg != null && msg.messageOwner != null && msg.messageOwner.noforwards) {
++                    if (msg != null && msg.messageOwner != null && MessageObject.inu_isNoForwards(msg.messageOwner)) {
+                         return true;
+                     }
+                 }
+@@ -13662,7 +13665,7 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     private void showTextSelectionHint(MessageObject messageObject) {
+-        if (getParentActivity() == null || getMessagesController().isPeerNoForwards(messageObject.getDialogId()) || (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) {
++        if (getParentActivity() == null || getMessagesController().isPeerNoForwards(messageObject.getDialogId()) || (messageObject != null && messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner))) {
+             return;
+         }
+         CharSequence text;
+@@ -19668,7 +19671,7 @@ public class ChatActivity extends BaseFragment implements
+             if (selectedMessagesIds[index].indexOfKey(messageObject.getId()) >= 0) {
+                 selectedMessagesIds[index].remove(messageObject.getId());
+                 if (!isReport()) {
+-                    if ((messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji() || messageObject.caption != null) && !(messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) {
++                    if ((messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji() || messageObject.caption != null) && !(messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner))) {
+                         selectedMessagesCanCopyIds[index].remove(messageObject.getId());
+                     }
+                     if (!messageObject.isAnimatedEmoji() && (messageObject.isSticker() || messageObject.isAnimatedSticker()) && MessageObject.isStickerHasSet(messageObject.getDocument())) {
+@@ -19697,7 +19700,7 @@ public class ChatActivity extends BaseFragment implements
+             } else {
+                 selectedMessagesIds[index].put(messageObject.getId(), messageObject);
+                 if (!isReport()) {
+-                    if ((messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji() || messageObject.caption != null) && !(messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) {
++                    if ((messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji() || messageObject.caption != null) && !(messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner))) {
+                         selectedMessagesCanCopyIds[index].put(messageObject.getId(), messageObject);
+                     }
+                     if (!messageObject.isAnimatedEmoji() && (messageObject.isSticker() || messageObject.isAnimatedSticker()) && MessageObject.isStickerHasSet(messageObject.getDocument())) {
+@@ -19883,7 +19886,7 @@ public class ChatActivity extends BaseFragment implements
+                                 MessageObject msg = selectedMessagesIds[a].valueAt(i);
+                                 if (msg == null) continue;
+                                 if (msg.isVoiceOnce() || msg.isRoundOnce()) continue;
+-                                if (msg.messageOwner.noforwards) continue;
++                                if (MessageObject.inu_isNoForwards(msg.messageOwner)) continue;
+                                 if (msg.isVoice() || msg.isRoundVideo())
+                                     show = true;
+                             }
+@@ -31676,7 +31679,7 @@ public class ChatActivity extends BaseFragment implements
+             allowPin = false;
+         }
+         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
+-        boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
++        boolean noforwards = isPeerNoForwards() || MessageObject.inu_isNoForwards(message.messageOwner) || getDialogId() == UserObject.VERIFY;
+         boolean noforwardsOrPaidMedia = noforwards || message.type == MessageObject.TYPE_PAID_MEDIA;
+         boolean allowUnpin = message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
+         boolean allowEdit = message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
+@@ -32927,7 +32930,7 @@ public class ChatActivity extends BaseFragment implements
+                     }
+                 }
+ 
+-                boolean showNoForwards = (isPeerNoForwards() || message.messageOwner.noforwards && currentUser != null && currentUser.bot) && message.messageOwner.action == null && message.isSent() && !message.isEditing() && chatMode != MODE_SCHEDULED && chatMode != MODE_SAVED && getDialogId() != UserObject.VERIFY;
++                boolean showNoForwards = (isPeerNoForwards() || MessageObject.inu_isNoForwards(message.messageOwner) && currentUser != null && currentUser.bot) && message.messageOwner.action == null && message.isSent() && !message.isEditing() && chatMode != MODE_SCHEDULED && chatMode != MODE_SAVED && getDialogId() != UserObject.VERIFY;
+                 scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinearRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, 0, isReactionsAvailable ? 36 : 0, 0));
+                 if (InuConfig.REACTION_BAR_BELOW.getValue() && isReactionsAvailable && reactionsLayout != null && reactionsLayout.getParent() == null && reactionsLayout.getLayoutParams() != null) {
+                     scrimPopupContainerLayout.addView(reactionsLayout);
+@@ -34370,7 +34373,7 @@ public class ChatActivity extends BaseFragment implements
+                 break;
+             }
+             case OPTION_REPLY: {
+-                if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards) {
++                if (selectedObject != null && selectedObject.messageOwner != null && MessageObject.inu_isNoForwards(selectedObject.messageOwner)) {
+                     return;
+                 }
+                 if (selectedObject != null && currentChat != null && (!ChatHelper.isEffectivelyInChat(currentChat) && !ChatObject.isMonoForum(currentChat) && !isThreadChat() || ChatObject.isChannel(currentChat) && !ChatObject.canPost(currentChat) && !currentChat.megagroup || !ChatObject.canSendMessages(currentChat))) {
+@@ -36981,7 +36984,7 @@ public class ChatActivity extends BaseFragment implements
+                     builder.setTitleMultipleLines(true);
+                 }
+                 final int finalTimestamp = timestamp;
+-                boolean noforwards = isPeerNoForwards() || (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.noforwards);
++                boolean noforwards = isPeerNoForwards() || (messageObject != null && messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner));
+                 builder.setItems(noforwards ? new CharSequence[] {LocaleController.getString(R.string.Open)} : new CharSequence[]{LocaleController.getString(R.string.Open), LocaleController.getString(R.string.Copy)}, (dialog, which) -> {
+                     if (which == 0) {
+                         if (str.startsWith("video?")) {
+@@ -37354,7 +37357,7 @@ public class ChatActivity extends BaseFragment implements
+         if (url == null || getParentActivity() == null) {
+             return;
+         }
+-        boolean noforwards = isPeerNoForwards() || (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.noforwards);
++        boolean noforwards = isPeerNoForwards() || (messageObject != null && messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner));
+         if (url instanceof URLSpanMono) {
+             if (!noforwards || getDialogId() == UserObject.VERIFY) {
+                 ((URLSpanMono) url).copyToClipboard();
+@@ -39715,7 +39718,7 @@ public class ChatActivity extends BaseFragment implements
+         msg.ttl_period = omsg.ttl_period;
+         msg.quick_reply_shortcut_id = omsg.quick_reply_shortcut_id;
+         msg.effect = omsg.effect;
+-        msg.noforwards = omsg.noforwards;
++        msg.noforwards = MessageObject.inu_isNoForwards(omsg);
+         msg.invert_media = omsg.invert_media;
+         msg.offline = omsg.offline;
+         msg.factcheck = omsg.factcheck;
+@@ -40341,7 +40344,7 @@ public class ChatActivity extends BaseFragment implements
+                 && messageObject.messageOwner != null
+                 && chatMode != MODE_SCHEDULED
+                 && !isPeerNoForwards()
+-                && !messageObject.messageOwner.noforwards
++                && !MessageObject.inu_isNoForwards(messageObject.messageOwner)
+                 && messageObject.type != MessageObject.TYPE_PAID_MEDIA;
+         }
+ 
+@@ -41984,7 +41987,9 @@ public class ChatActivity extends BaseFragment implements
+                         msg.attachPath = omsg.attachPath;
+                     }
+                     msg.media = emedia.media;
+-                    msg.noforwards = true;
++                    if (!xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++                        msg.noforwards = true;
++                    }
+                     MessageObject msgObj = new MessageObject(message.currentAccount, msg, false, true);
+                     messages.add(msgObj);
+                 }
+@@ -46670,7 +46675,7 @@ public class ChatActivity extends BaseFragment implements
+             allowPin = false;
+         }
+         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
+-        boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
++        boolean noforwards = isPeerNoForwards() || MessageObject.inu_isNoForwards(message.messageOwner) || getDialogId() == UserObject.VERIFY;
+         boolean noforwardsOrPaidMedia = noforwards || message.type == MessageObject.TYPE_PAID_MEDIA;
+         boolean allowUnpin = !isEphemeral && message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
+         boolean allowEdit = !isEphemeral && message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
+@@ -47956,6 +47961,9 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     public boolean isPeerNoForwards() {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return currentChat != null ?
+             getMessagesController().isChatNoForwards(currentChat) :
+             getMessagesController().isUserNoForwards(userInfo);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatEditActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatEditActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ChatEditActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatEditActivity.java
+@@ -2386,7 +2386,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
+                 typeCell.setTextAndValueAndIcon(getString("TypeLocationGroup", R.string.TypeLocationGroup), link, R.drawable.msg_channel, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE || forumsCell != null && forumsCell.getVisibility() == View.VISIBLE);
+             } else {
+                 String type;
+-                boolean isRestricted = currentChat.noforwards;
++                boolean isRestricted = MessageObject.inu_isNoForwards(currentChat);
+                 if (isChannel) {
+                     type = isPrivate ? isRestricted ? getString("TypePrivateRestrictedForwards", R.string.TypePrivateRestrictedForwards) : getString("TypePrivate", R.string.TypePrivate) : getString("TypePublic", R.string.TypePublic);
+                 } else {
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/AudioPlayerAlert.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/AudioPlayerAlert.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/AudioPlayerAlert.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/AudioPlayerAlert.java
+@@ -2328,7 +2328,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
+             final boolean noforwards = (
+                 dialogId < 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(dialogId) ||
+                 MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
+-                messageObject.messageOwner.noforwards
++                MessageObject.inu_isNoForwards(messageObject.messageOwner)
+             );
+             if (noforwards != this.noforwards) {
+                 this.noforwards = noforwards;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/Paint/Views/MessageEntityView.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/Paint/Views/MessageEntityView.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/Paint/Views/MessageEntityView.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/Paint/Views/MessageEntityView.java
+@@ -1444,7 +1444,7 @@ public class MessageEntityView extends EntityView {
+         newmsg.reactions = msg.reactions;
+         newmsg.restriction_reason = msg.restriction_reason;
+         newmsg.ttl_period = msg.ttl_period;
+-        newmsg.noforwards = msg.noforwards;
++        newmsg.noforwards = MessageObject.inu_isNoForwards(msg);
+         newmsg.invert_media = msg.invert_media;
+         newmsg.send_state = msg.send_state;
+         newmsg.fwd_msg_id = msg.fwd_msg_id;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/SearchDownloadsContainer.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/SearchDownloadsContainer.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/SearchDownloadsContainer.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/SearchDownloadsContainer.java
+@@ -144,13 +144,13 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
+                     }
+                     boolean openInPhotoViewer = message.canPreviewDocument();
+                     if (!openInPhotoViewer) {
+-                        boolean noforwards = message.messageOwner != null && message.messageOwner.noforwards;
++                        boolean noforwards = MessageObject.inu_isNoForwards(message != null ? message.messageOwner : null);
+                         TLRPC.Chat chatTo = messageObject.messageOwner.peer_id.channel_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.channel_id) : null;
+                         if (chatTo == null) {
+                             chatTo = messageObject.messageOwner.peer_id.chat_id != 0 ? MessagesController.getInstance(UserConfig.selectedAccount).getChat(messageObject.messageOwner.peer_id.chat_id) : null;
+                         }
+                         if (chatTo != null) {
+-                            noforwards = chatTo.noforwards;
++                            noforwards = MessageObject.inu_isNoForwards(chatTo);
+                         }
+                         openInPhotoViewer = openInPhotoViewer || noforwards;
+                     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/SharedMediaLayout.java
+@@ -3977,6 +3977,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+         }
+     }
+     private boolean hasNoforwardsMessage() {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         boolean hasNoforwardsMessage = false;
+         for (int a = 1; a >= 0; a--) {
+             ArrayList<Integer> ids = new ArrayList<>();
+@@ -3986,7 +3989,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+             for (Integer id1 : ids) {
+                 if (id1 > 0) {
+                     MessageObject msg = selectedFiles[a].get(id1);
+-                    if (msg != null && msg.messageOwner != null && msg.messageOwner.noforwards) {
++                    if (msg != null && msg.messageOwner != null && MessageObject.inu_isNoForwards(msg.messageOwner)) {
+                         hasNoforwardsMessage = true;
+                         break;
+                     }
+@@ -9222,7 +9225,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
+                     msg.ttl_period = omsg.ttl_period;
+                     msg.quick_reply_shortcut_id = omsg.quick_reply_shortcut_id;
+                     msg.effect = omsg.effect;
+-                    msg.noforwards = omsg.noforwards;
++                    msg.noforwards = MessageObject.inu_isNoForwards(omsg);
+                     msg.invert_media = omsg.invert_media;
+                     msg.offline = omsg.offline;
+                     msg.factcheck = omsg.factcheck;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert2.java
+@@ -1039,6 +1039,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
+     }
+ 
+     public void setNoforwards(boolean noforwards) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            noforwards = false;
++        }
+         if (textView != null) {
+             textView.setTextIsSelectable(!noforwards);
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Components/TranslateAlert3.java
+@@ -209,6 +209,9 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
+         return this;
+     }
+     public TranslateAlert3 setNoforwards(boolean noforwards) {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            noforwards = false;
++        }
+         this.noforwards = noforwards;
+         return this;
+     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/PhotoViewer.java
+@@ -14316,7 +14316,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+ 
+         animatorPollAttachButtonsVisibility.setValue(sendPhotoTypeIsPollMediaEdit, false);
+ 
+-        final boolean noforwards = messageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || (messageObject.messageOwner != null && messageObject.messageOwner.noforwards) || messageObject.hasRevealedExtendedMedia());
++        final boolean noforwards = messageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || (messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner)) || messageObject.hasRevealedExtendedMedia());
+         if (messageObject != null && messages == null) {
+             if (messageObject.messageOwner != null && MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageObject.messageOwner).webpage != null) {
+                 TLRPC.WebPage webPage = MessageObject.getMedia(messageObject.messageOwner).webpage;
+@@ -14770,7 +14770,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+             xie.fa.gram.helpers.media.PhotoViewerHelper.setFooter(menuItem, newMessageObject);
+ 
+             boolean isInvoice = newMessageObject.isInvoice();
+-            boolean noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia();
++            boolean noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && MessageObject.inu_isNoForwards(newMessageObject.messageOwner)) || newMessageObject.hasRevealedExtendedMedia();
+             if ((isVideo || xie.fa.gram.helpers.media.PhotoViewerHelper.gifAsVideo(newMessageObject)) && !isLivePhoto) {
+                 bottomLayout.setVisibility(View.VISIBLE);
+                 bottomLayout.setTag(1);
+@@ -15901,7 +15901,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+                 return;
+             }
+             MessageObject newMessageObject = imagesArr.get(currentIndex);
+-            final boolean noforwards = newMessageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia());
++            final boolean noforwards = newMessageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && MessageObject.inu_isNoForwards(newMessageObject.messageOwner)) || newMessageObject.hasRevealedExtendedMedia());
+             sameImage = (init || force) && currentMessageObject != null && currentMessageObject.getId() == newMessageObject.getId();
+             if (sameImage) {
+                 newMessageObject.putInDownloadsStore = currentMessageObject.putInDownloadsStore;
+@@ -17701,7 +17701,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+             if (chatActivity != null && chatActivity.getCurrentEncryptedChat() != null ||
+                 avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(avatarsDialogId) ||
+                 messageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
+-                (messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) || messageObject != null && messageObject.hasRevealedExtendedMedia() ||
++                (messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner))) || messageObject != null && messageObject.hasRevealedExtendedMedia() ||
+                 isPageBlocksNoForwards(pageBlocksAdapter)
+             ) {
+                 windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+@@ -19841,7 +19841,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
+         final Object parent = adapter.getParentObject();
+         if (parent instanceof MessageObject && ((MessageObject) parent).messageOwner != null) {
+             final MessageObject messageObject = (MessageObject) parent;
+-            return MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || messageObject.messageOwner.noforwards || messageObject.hasRevealedExtendedMedia();
++            return MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || MessageObject.inu_isNoForwards(messageObject.messageOwner) || messageObject.hasRevealedExtendedMedia();
+         }
+         return false;
+     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity.java
+@@ -14542,7 +14542,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+                     } else {
+                         setLoadingSpan(null);
+                         String urlFinal = getMessagesController().linkPrefix + "/" + usernameRaw;
+-                        if (currentChat == null || !currentChat.noforwards) {
++                        if (currentChat == null || !MessageObject.inu_isNoForwards(currentChat)) {
+                             AndroidUtilities.addToClipboard(urlFinal);
+                             undoView.showWithAction(0, UndoView.ACTION_USERNAME_COPIED, null);
+                         }
+@@ -17192,6 +17192,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
+     }
+ 
+     public boolean isPeerNoForwards() {
++        if (xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++            return false;
++        }
+         return currentChat != null ?
+             getMessagesController().isChatNoForwards(currentChat) :
+             getMessagesController().isUserNoForwards(userInfo);
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity2.java b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity2.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity2.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ProfileActivity2.java
+@@ -684,7 +684,7 @@ public class ProfileActivity2 extends BaseFragment implements
+                 } else {
+                     setLoadingSpan(null);
+                     String urlFinal = getMessagesController().linkPrefix + "/" + usernameRaw;
+-                    if (chat == null || !chat.noforwards) {
++                    if (chat == null || !org.telegram.messenger.MessageObject.inu_isNoForwards(chat)) {
+                         AndroidUtilities.addToClipboard(urlFinal);
+                         BulletinFactory.of(ProfileActivity2.this).createCopyBulletin(getString(R.string.UsernameCopied)).show();
+                     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsIntroActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsIntroActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsIntroActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsIntroActivity.java
+@@ -3949,7 +3949,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
+                         msg.date = transaction.date;
+                         msg.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA;
+                         msg.media = emedia;
+-                        msg.noforwards = true;
++                        if (!xie.fa.gram.InuConfig.BYPASS_CONTENT_RESTRICTIONS.getValue()) {
++                            msg.noforwards = true;
++                        }
+                         MessageObject msgObj = new MessageObject(currentAccount, msg, false, false);
+                         messages.add(msgObj);
+                     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Stories/PeerStoriesView.java b/TMessagesProj/src/main/java/org/telegram/ui/Stories/PeerStoriesView.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Stories/PeerStoriesView.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Stories/PeerStoriesView.java
+@@ -7170,7 +7170,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
+                 if (storyItem.pinned) {
+                     final long did = storyItem.dialogId;
+                     final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+-                    if (chat != null && chat.noforwards) {
++                    if (chat != null && org.telegram.messenger.MessageObject.inu_isNoForwards(chat)) {
+                         return false;
+                     }
+                 }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Stories/recorder/StoryEntry.java b/TMessagesProj/src/main/java/org/telegram/ui/Stories/recorder/StoryEntry.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Stories/recorder/StoryEntry.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Stories/recorder/StoryEntry.java
+@@ -777,7 +777,7 @@ public class StoryEntry {
+         if (messageObject == null || messageObject.isSponsored()) {
+             return false;
+         }
+-        if (messageObject.messageOwner != null && messageObject.messageOwner.noforwards) {
++        if (messageObject.messageOwner != null && MessageObject.inu_isNoForwards(messageObject.messageOwner)) {
+             return false;
+         }
+         if (messageObject.type == MessageObject.TYPE_POLL || messageObject.type == MessageObject.TYPE_CONTACT) {
+@@ -785,14 +785,14 @@ public class StoryEntry {
+         }
+         long dialogId = messageObject.getDialogId();
+         TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+-        if (chat != null && chat.noforwards) {
++        if (chat != null && MessageObject.inu_isNoForwards(chat)) {
+             return false;
+         }
+         if (dialogId >= 0 || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+             if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null && (messageObject.messageOwner.fwd_from.flags & 4) != 0) {
+                 dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+                 chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+-                if (dialogId >= 0 || chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat) || !ChatObject.isPublic(chat)) {
++                if (dialogId >= 0 || chat != null && MessageObject.inu_isNoForwards(chat) || !ChatObject.isChannelAndNotMegaGroup(chat) || !ChatObject.isPublic(chat)) {
+                     return false;
+                 }
+                 return true;
+@@ -807,11 +807,11 @@ public class StoryEntry {
+         TLRPC.Peer peer = messageObject.messageOwner.peer_id;
+         long dialogId = DialogObject.getPeerDialogId(peer);
+         TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+-        if (chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat)) {
++        if (chat != null && MessageObject.inu_isNoForwards(chat) || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+             if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null && (messageObject.messageOwner.fwd_from.flags & 4) != 0) {
+                 dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
+                 chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
+-                if (dialogId >= 0 || chat != null && chat.noforwards || !ChatObject.isChannelAndNotMegaGroup(chat)) {
++                if (dialogId >= 0 || chat != null && MessageObject.inu_isNoForwards(chat) || !ChatObject.isChannelAndNotMegaGroup(chat)) {
+                     return null; // no repost
+                 } else {
+                     return true; // repost of forward

@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Wed, 28 Oct 2026 03:46:37 +0530
+Subject: Suppress screenshot notification messages
+
+---
+ .../src/main/java/org/telegram/messenger/SecretChatHelper.java | 3 +++
+ .../main/java/org/telegram/messenger/SendMessagesHelper.java   | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/SecretChatHelper.java b/TMessagesProj/src/main/java/org/telegram/messenger/SecretChatHelper.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/SecretChatHelper.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/SecretChatHelper.java
+@@ -488,6 +488,9 @@ public class SecretChatHelper extends BaseController {
+     }
+ 
+     public void sendScreenshotMessage(TLRPC.EncryptedChat encryptedChat, ArrayList<Long> random_ids, TLRPC.Message resendMessage) {
++        if (xie.fa.gram.InuConfig.ANTI_SCREENSHOT_NOTIFICATION.getValue()) {
++            return;
++        }
+         if (!(encryptedChat instanceof TLRPC.TL_encryptedChat)) {
+             return;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java b/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/SendMessagesHelper.java
+@@ -2020,6 +2020,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
+     }
+ 
+     public void sendScreenshotMessage(TLRPC.User user, int messageId, TLRPC.Message resendMessage) {
++        if (xie.fa.gram.InuConfig.ANTI_SCREENSHOT_NOTIFICATION.getValue()) {
++            return;
++        }
+         if (user == null || messageId == 0 || user.id == getUserConfig().getClientUserId()) {
+             return;
+         }

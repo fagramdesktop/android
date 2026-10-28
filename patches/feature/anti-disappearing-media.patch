@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Burhanverse <contact@burhanverse.eu.org>
+Date: Wed, 28 Oct 2026 03:47:34 +0530
+Subject: Keep self-destructing and view-once media
+
+---
+ .../org/telegram/messenger/MessageObject.java | 21 +++++++++++++++++++
+ .../java/org/telegram/ui/ChatActivity.java    |  6 ++++++
+ .../org/telegram/ui/SecretMediaViewer.java    |  3 +++
+ 3 files changed, 30 insertions(+)
+
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+@@ -10089,6 +10089,9 @@ public class MessageObject {
+     }
+ 
+     public static boolean shouldEncryptPhotoOrVideo(int currentAccount, TLRPC.Message message) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         if (message != null && message.media != null && (isVoiceDocument(getDocument(message)) || isRoundVideoMessage(message)) && message.media.ttl_seconds == 0x7FFFFFFF) {
+             return true;
+         }
+@@ -10110,6 +10113,9 @@ public class MessageObject {
+     }
+ 
+     public static boolean isSecretPhotoOrVideo(TLRPC.Message message) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         if (message instanceof TLRPC.TL_message_secret) {
+             return (getMedia(message) instanceof TLRPC.TL_messageMediaPhoto || isRoundVideoMessage(message) || isVideoMessage(message)) && message.ttl > 0 && message.ttl <= 60;
+         } else if (message instanceof TLRPC.TL_message) {
+@@ -10119,6 +10125,9 @@ public class MessageObject {
+     }
+ 
+     public static boolean isSecretMedia(TLRPC.Message message) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         if (message instanceof TLRPC.TL_message_secret) {
+             return (getMedia(message) instanceof TLRPC.TL_messageMediaPhoto || isRoundVideoMessage(message) || isVideoMessage(message)) && getMedia(message).ttl_seconds != 0;
+         } else if (message instanceof TLRPC.TL_message) {
+@@ -10128,6 +10137,9 @@ public class MessageObject {
+     }
+ 
+     public boolean needDrawBluredPreview() {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         if (isRepostPreview) {
+             return false;
+         }
+@@ -10147,6 +10159,9 @@ public class MessageObject {
+     }
+ 
+     public boolean isSecretMedia() {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         if (messageOwner instanceof TLRPC.TL_message_secret) {
+             return (((getMedia(messageOwner) instanceof TLRPC.TL_messageMediaPhoto) || isGif()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isRoundVideo() || isVideo());
+         } else if (messageOwner instanceof TLRPC.TL_message) {
+@@ -11312,10 +11327,16 @@ public class MessageObject {
+     }
+ 
+     public boolean isVoiceOnce() {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         return isVoice() && messageOwner != null && messageOwner.media != null && messageOwner.media.ttl_seconds == 0x7FFFFFFF;
+     }
+ 
+     public boolean isRoundOnce() {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return false;
++        }
+         return isRoundVideo() && messageOwner != null && messageOwner.media != null && messageOwner.media.ttl_seconds == 0x7FFFFFFF;
+     }
+ 
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+@@ -16069,6 +16069,9 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     private Runnable sendSecretMessageRead(MessageObject messageObject, boolean readNow) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return null;
++        }
+         if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.destroyTime != 0 || messageObject.messageOwner.ttl <= 0) {
+             return null;
+         }
+@@ -16098,6 +16101,9 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     private Runnable sendSecretMediaDelete(MessageObject messageObject) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            return null;
++        }
+         if (messageObject == null || messageObject.isOut() || !messageObject.isSecretMedia() || messageObject.messageOwner.ttl != 0x7FFFFFFF) {
+             return null;
+         }
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/SecretMediaViewer.java b/TMessagesProj/src/main/java/org/telegram/ui/SecretMediaViewer.java
+index 0000000..0000000 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/SecretMediaViewer.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/SecretMediaViewer.java
+@@ -1974,6 +1974,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
+     }
+ 
+     public boolean closePhoto(boolean animated, boolean byDelete) {
++        if (xie.fa.gram.InuConfig.ANTI_DISAPPEARING_MEDIA.getValue()) {
++            onClose = null;
++        }
+         if (parentActivity == null || !isPhotoVisible || checkPhotoAnimation()) {
+             return false;
+         }

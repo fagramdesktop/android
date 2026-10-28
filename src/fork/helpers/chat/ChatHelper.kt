@@ -969,7 +969,7 @@ object ChatHelper {
     }
 
     private fun canForwardRepeat(activity: ChatActivity, selected: MessageObject): Boolean {
-        val noforwards = activity.isPeerNoForwards || selected.messageOwner?.noforwards == true
+        val noforwards = activity.isPeerNoForwards || MessageObject.inu_isNoForwards(selected.messageOwner)
         return !noforwards && selected.canForwardMessage()
     }
 
@@ -1814,7 +1814,7 @@ object ChatHelper {
             }
 
             ChatActivity.OPTION_REPLY -> {
-                val noforwards = activity.isPeerNoForwards || (message.messageOwner != null && message.messageOwner.noforwards)
+                val noforwards = activity.isPeerNoForwards || MessageObject.inu_isNoForwards(message.messageOwner)
                 if (noforwards) return false
                 when (InuConfig.REPLY_LONG_TAP_ACTION.value) {
                     InuConfig.ReplyLongTapItem.OFF -> false

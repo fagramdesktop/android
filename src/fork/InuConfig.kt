@@ -686,6 +686,18 @@ object InuConfig {
     @JvmField
     val ROUND_RECORDER_DUAL_CAMERA = BoolItem("round_recorder_dual_camera", true)
 
+    @JvmField
+    val ANTI_SCREENSHOT_NOTIFICATION = BoolItem("anti_screenshot_notification", false)
+
+    @JvmField
+    val ANTI_DISAPPEARING_MEDIA = BoolItem("anti_disappearing_media", false)
+
+    @JvmField
+    val BYPASS_CONTENT_RESTRICTIONS = BoolItem("bypass_content_restrictions", false)
+
+    @JvmField
+    val BYPASS_CHANNEL_RESTRICTIONS = BoolItem("bypass_channel_restrictions", false)
+
     // todo: remove in 40
     class NonIslandSplitFromTabBarsItem(key: String) : BoolItem(key, false) {
         override fun read(prefs: SharedPreferences): Boolean {
