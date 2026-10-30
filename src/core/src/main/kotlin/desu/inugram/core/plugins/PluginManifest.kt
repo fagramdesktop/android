@@ -50,8 +50,8 @@ data class PluginManifest(
 class PluginManifestException(message: String) : Exception(message)
 
 object PluginManifestParser {
-    private val START = Regex("""^==InuPlugin==$""")
-    private val END = Regex("""^==/InuPlugin==$""")
+    private val START = Regex("""^==(?:Inu|Fa)Plugin==$""")
+    private val END = Regex("""^==/(?:Inu|Fa)Plugin==$""")
     private val DIRECTIVE = Regex("""^@(\S+)(?:\s+(.*))?$""")
 
     /** splits on commas that are not inside `(...)`, so scoped grants like `fetch(a,b)` stay one token */
@@ -103,8 +103,8 @@ object PluginManifestParser {
             }
         }
 
-        if (!inBlock) throw PluginManifestException("missing ==InuPlugin== metadata block")
-        if (!sawEnd) throw PluginManifestException("unterminated metadata block (missing ==/InuPlugin==)")
+        if (!inBlock) throw PluginManifestException("missing metadata block (==InuPlugin== or ==FaPlugin==)")
+        if (!sawEnd) throw PluginManifestException("unterminated metadata block")
 
         val name = raw["name"]?.firstOrNull()?.takeIf { it.isNotBlank() }
             ?: throw PluginManifestException("missing @name")

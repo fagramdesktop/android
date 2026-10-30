@@ -48,7 +48,10 @@ impl<'js> Globals<'js> {
   pub(crate) fn install(ctx: &Ctx<'js>, plugin_error: Constructor<'js>) -> JsResult<()> {
     let inu = Object::new(ctx.clone())?;
     inu.set("PluginError", plugin_error.clone())?;
+
     ctx.globals().set("inu", inu.clone())?;
+    ctx.globals().set("fa", inu.clone())?;
+
     let reflect: Object = ctx.globals().get("Reflect")?;
     ctx.store_userdata(Self {
       inu,

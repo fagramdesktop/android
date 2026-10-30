@@ -24,6 +24,10 @@ import org.telegram.ui.Components.BulletinFactory
  */
 object PluginDevServer {
     const val ACTION = "xie.fa.gram.plugins.DEV"
+    val COMPAT_ACTIONS = arrayOf(
+        "xie.fa.gram.plugins.DEV",
+        "desu.inugram.plugins.DEV"
+    )
     const val DIR = "plugin-dev"
 
     private const val SENDER_PERMISSION = "android.permission.DUMP"
@@ -51,14 +55,16 @@ object PluginDevServer {
     private fun register(context: Context) {
         if (registered) return
         try {
-            val filter = IntentFilter(ACTION)
+            val filter = IntentFilter().apply {
+                COMPAT_ACTIONS.forEach { addAction(it) }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 context.registerReceiver(receiver, filter, SENDER_PERMISSION, null, Context.RECEIVER_EXPORTED)
             } else {
                 context.registerReceiver(receiver, filter, SENDER_PERMISSION, null)
             }
             registered = true
-            PluginLog.HOST.d("dev", "listening on $ACTION, drop dir ${dropDir(context)}")
+            PluginLog.HOST.d("dev", "listening on $ACTION (and compat actions), drop dir ${dropDir(context)}")
         } catch (e: Exception) {
             PluginLog.HOST.e("dev", "could not register", e)
         }
@@ -77,7 +83,7 @@ object PluginDevServer {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action != ACTION) return
+            if (intent.action !in COMPAT_ACTIONS) return
             when (intent.getStringExtra("cmd")) {
                 "eval" -> return answerLater(isOrderedBroadcast, goAsync()) { startEval(context, intent, it) }
                 "memory" -> return answerLater(isOrderedBroadcast, goAsync()) { startMemory(context, intent, it) }

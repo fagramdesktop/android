@@ -2221,3 +2221,6 @@ declare module '*.dex' {
   const file: File
   export default file
 }
+
+/** Canonical global for FAgram plugins, aliased to inu */
+declare const fa: typeof inu

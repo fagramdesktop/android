@@ -175,4 +175,20 @@ class PluginManifestParserTest {
         )
         assertEquals("spaced   out", m.name)
     }
+
+    @Test
+    fun parses_fa_plugin_header() {
+        val m = PluginManifestParser.parse(
+            """
+            // ==FaPlugin==
+            // @name FA Plugin
+            // @author teidesu
+            // @version 2.0
+            // ==/FaPlugin==
+            """.trimIndent(),
+        )
+        assertEquals("FA Plugin", m.name)
+        assertEquals("teidesu", m.author)
+        assertEquals("2.0", m.version)
+    }
 }

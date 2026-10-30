@@ -247,3 +247,18 @@ fn structured_clone_copies_errors_and_boxed_primitives() {
   );
   assert_eq!(out, r#"[true,"nope",true,7,"object"]"#);
 }
+
+#[test]
+fn fa_global_alias_resolves_to_inu() {
+  let (_rt, ctx, _host) = setup();
+  ctx.with(|ctx| crate::api::error::install_plugin_error(&ctx).unwrap());
+  let out = eval(
+    &ctx,
+    r#"
+      JSON.stringify([
+        inu === fa,
+      ])
+    "#,
+  );
+  assert_eq!(out, r#"[true]"#);
+}

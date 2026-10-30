@@ -87,5 +87,5 @@ tests if the project adds them. Report checks actually run and any blockers.
 `pnpm dev <plugin>` builds, pushes to a connected Android device, and reloads on
 changes. It requires a running app with plugin developer mode enabled and skips
 the install permission sheet. Use it when device deployment is requested; local
-checks do not require it. Use `--app desu.inugram.beta` for the debug app and
+checks do not require it. Use `--app xie.fa.gram.beta` for the debug app and
 `-s <serial>` to select a device. Do not uninstall plugins as part of verification.

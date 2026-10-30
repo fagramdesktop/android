@@ -10,11 +10,11 @@ import { describeIssue } from './schema.js'
 
 const run = promisify(execFile)
 
-export const RELEASE_APP_ID = 'desu.inugram'
+export const RELEASE_APP_ID = 'xie.fa.gram'
 
 const PID_POLL_MS = 2000
 const DROP_DIR_NAME = 'plugin-dev'
-const DEV_ACTION = 'desu.inugram.plugins.DEV'
+const DEV_ACTION = 'xie.fa.gram.plugins.DEV'
 /** `PluginLog` tags: one channel per plugin, keyed by manifest id (install id without one), and one for the host */
 export const PLUGIN_LOG_TAG_PREFIX = 'InuPlugin/'
 export const HOST_LOG_TAG = 'InuPluginHost'

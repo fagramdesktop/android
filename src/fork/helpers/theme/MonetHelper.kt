@@ -245,6 +245,10 @@ object MonetHelper {
 
     private const val THEME_OVERRIDE_DIR = "theme-override"
     private const val ACTION_RELOAD_THEME = "xie.fa.gram.RELOAD_THEME"
+    private val COMPAT_THEME_RELOAD_ACTIONS = arrayOf(
+        "xie.fa.gram.RELOAD_THEME",
+        "desu.inugram.RELOAD_THEME"
+    )
 
     private val overlayChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -269,7 +273,7 @@ object MonetHelper {
 
     private val themeReloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action != ACTION_RELOAD_THEME) return
+            if (intent.action !in COMPAT_THEME_RELOAD_ACTIONS) return
             Log.d("MonetHelper", "theme reload broadcast: applied=${reapplyActiveTheme()}")
         }
     }
@@ -277,7 +281,9 @@ object MonetHelper {
     fun registerThemeReloadReceiver(context: Context) {
         if (!BuildVars.DEBUG_VERSION || themeReloadReceiverRegistered) return
         try {
-            val filter = IntentFilter(ACTION_RELOAD_THEME)
+            val filter = IntentFilter().apply {
+                COMPAT_THEME_RELOAD_ACTIONS.forEach { addAction(it) }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 context.registerReceiver(themeReloadReceiver, filter, Context.RECEIVER_EXPORTED)
             } else {

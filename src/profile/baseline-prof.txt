@@ -1,2 +1,2 @@
-HSPLdesu/inugram/helpers/plugins/**->**(**)**
-HSPLdesu/inugram/core/plugins/**->**(**)**
+HSPLxie/fa/gram/helpers/plugins/**->**(**)**
+HSPLxie/fa/gram/core/plugins/**->**(**)**

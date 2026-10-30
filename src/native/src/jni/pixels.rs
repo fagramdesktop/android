@@ -264,7 +264,7 @@ fn plane(env: &Env, buffer: &JByteBuffer, offset: jint, row_stride: jint, pixel_
 
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_ui_NativePixels_rgbaToYuv420<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_ui_NativePixels_rgbaToYuv420<'local>(
   mut env: EnvUnowned<'local>,
   _class: JClass<'local>,
   pixels: JByteBuffer<'local>,

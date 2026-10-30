@@ -67,6 +67,21 @@ class PluginJvmTest {
     }
 
     @Test
+    fun cross_compatibility_class_lookups_resolve_across_inugram_and_fagram_prefixes() {
+        val plugin = startPlugin("reflective", scoped)
+        val inugramName = "desu.inugram.jvmfixture.JvmFixture"
+        val desuInuName = "desu.inu.jvmfixture.JvmFixture"
+        val inuName = "inu.jvmfixture.JvmFixture"
+        val xieFaName = "xie.fa.jvmfixture.JvmFixture"
+
+        assertEquals('C', readHandleKind(plugin.jvm(PluginJvm.OP_CLASS, name = inugramName)))
+        assertEquals('C', readHandleKind(plugin.jvm(PluginJvm.OP_CLASS, name = desuInuName)))
+        assertEquals('C', readHandleKind(plugin.jvm(PluginJvm.OP_CLASS, name = inuName)))
+        assertEquals('C', readHandleKind(plugin.jvm(PluginJvm.OP_CLASS, name = xieFaName)))
+        assertEquals('C', readHandleKind(plugin.jvm(PluginJvm.OP_CLASS, name = fixtureClass)))
+    }
+
+    @Test
     fun the_current_screen_is_a_reference_or_null_when_there_is_no_ui() {
         val plugin = startPlugin("reflective", scoped)
         testAppScreen.fragment = JvmFixture()

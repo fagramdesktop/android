@@ -212,7 +212,7 @@ Run checks relevant to the change; no build for documentation-only edits.
   Modifiers: `a` alpha %, `s` blend to white %, `l` blend to black %, `t` HCT tone,
   `c` relative chroma % (0–400); combine as `(t=90,c=75)`.
 - Debug theme reload: `pnpm run push-theme [light|dark|amoled] [--watch] [--clear]
-  [-s <serial>]`. Requires a running debug app; sends `desu.inugram.RELOAD_THEME`.
+  [-s <serial>]`. Requires a running debug app; sends `xie.fa.gram.RELOAD_THEME`.
 
 Keep this guide to durable rules, ownership boundaries, and commands. Update it
 when those change; keep implementation walkthroughs and benchmark history out.

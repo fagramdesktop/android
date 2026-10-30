@@ -104,7 +104,7 @@ export default defineConfig({
 `inu dev` connects to the app over `adb`:
 
 - Run the app and enable developer mode in Settings > Plugins. Dev installs skip the permission sheet.
-- The default package is `desu.inugram`. Use `--app desu.inugram.beta` for debug builds.
+- The default package is `xie.fa.gram`. Use `--app xie.fa.gram.beta` for debug builds.
 - Use `-s <serial>` to select a device when several are connected.
 
 ## Typechecking

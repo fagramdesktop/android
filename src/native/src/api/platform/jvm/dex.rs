@@ -1,6 +1,6 @@
 mod writer;
 use writer::{create_method, get_word_count, Body, Class, Field, Op};
-const TARGET: &str = "Ldesu/inugram/helpers/plugins/platform/PluginJvmClass$MethodTarget;";
+const TARGET: &str = "Lxie/fa/gram/helpers/plugins/platform/PluginJvmClass$MethodTarget;";
 const OBJECT: &str = "Ljava/lang/Object;";
 const ARRAY: &str = "[Ljava/lang/Object;";
 fn get_box_pair(t: &str) -> Option<(&'static str, &'static str)> {

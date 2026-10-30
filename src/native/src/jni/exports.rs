@@ -60,7 +60,7 @@ use crate::sandbox::limits::{
 use crate::sandbox::registry::Lifecycle;
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeCreate(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeCreate(
   mut env: EnvUnowned,
   _this: JObject,
   listener: JObject,
@@ -379,7 +379,7 @@ fn with_engine<T>(ptr: jlong, fallback: T, f: impl FnOnce(&Engine) -> T) -> T {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedBefore<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeXposedBefore<'local>(
   mut env: EnvUnowned<'local>,
   this: JObject<'local>,
   ptr: jlong,
@@ -480,7 +480,7 @@ fn answer_after(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedAfter<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeXposedAfter<'local>(
   mut env: EnvUnowned<'local>,
   this: JObject<'local>,
   ptr: jlong,
@@ -501,7 +501,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedAft
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedAfterOnly<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeXposedAfterOnly<'local>(
   mut env: EnvUnowned<'local>,
   this: JObject<'local>,
   ptr: jlong,
@@ -519,7 +519,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedAft
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedBudgetMs(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeXposedBudgetMs(
   _env: EnvUnowned,
   _this: JObject,
 ) -> jlong {
@@ -527,7 +527,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedBud
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedRelease(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeXposedRelease(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -541,7 +541,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeXposedRel
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeInit(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeInit(
   mut env: EnvUnowned,
   _this: JObject,
 ) -> jboolean {
@@ -549,7 +549,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeHasLoadedLsposed(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeHasLoadedLsposed(
   _env: EnvUnowned,
   _this: JObject,
 ) -> jboolean {
@@ -557,7 +557,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeHook<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeHook<'local>(
   mut env: EnvUnowned<'local>,
   _this: JObject<'local>,
   target: JObject<'local>,
@@ -568,7 +568,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeUnhook<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeUnhook<'local>(
   mut env: EnvUnowned<'local>,
   _this: JObject<'local>,
   target: JObject<'local>,
@@ -577,7 +577,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeIsHooked<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeIsHooked<'local>(
   mut env: EnvUnowned<'local>,
   _this: JObject<'local>,
   target: JObject<'local>,
@@ -586,7 +586,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeAllocateInstance<
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeAllocateInstance<
   'local,
 >(
   mut env: EnvUnowned<'local>,
@@ -600,7 +600,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginJvm_00024Native_nativeCallNonvirtual<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginJvm_00024Native_nativeCallNonvirtual<'local>(
   mut env: EnvUnowned<'local>,
   _this: JObject<'local>,
   method: JObject<'local>,
@@ -625,7 +625,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginJvm_0002
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_00024Native_nativeDisableProfileSaver(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_platform_PluginXposed_00024Native_nativeDisableProfileSaver(
   mut env: EnvUnowned,
   _this: JObject,
 ) -> jboolean {
@@ -636,7 +636,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_platform_PluginXposed_0
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmCallback(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmCallback(
   mut env: EnvUnowned,
   this: JObject,
   ptr: jlong,
@@ -669,7 +669,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmCallba
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmMethod(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmMethod(
   mut env: EnvUnowned,
   this: JObject,
   ptr: jlong,
@@ -703,7 +703,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmMethod
 /// decodes from whichever thread holds a value, and may be doing so while the engine is leased to
 /// another. `kind` is the handle kind byte; the answer is the id, or 0 once the table has closed.
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmMint(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmMint(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -722,7 +722,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmMint(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmObjectAt(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmObjectAt(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -737,7 +737,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmObject
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmRelease(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmRelease(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -749,7 +749,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmReleas
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmClose(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeJvmClose(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -760,7 +760,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeJvmClose(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeStopCallbacks(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeStopCallbacks(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -769,7 +769,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeStopCallb
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativePumpJobs(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativePumpJobs(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -782,7 +782,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativePumpJobs(
 
 /// the one way a host answers a request it took: `api` names the table, see `QuickJs.SETTLE_*`
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeSettle(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeSettle(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -797,7 +797,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeSettle(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeSettleBytes(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeSettleBytes(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -814,7 +814,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeSettleByt
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeRunTimers(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeRunTimers(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -823,7 +823,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeRunTimers
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAppVisibilityChanged(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAppVisibilityChanged(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -841,7 +841,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAppVisibi
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiRender(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeUiRender(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -856,7 +856,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiRender(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiEvent(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeUiEvent(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -871,7 +871,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiEvent(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiMenuClick(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeUiMenuClick(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -882,7 +882,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiMenuCli
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiPageClosed(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeUiPageClosed(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -892,7 +892,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeUiPageClo
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryLoadMore(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryLoadMore(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -908,7 +908,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryLoadAround(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryLoadAround(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -923,7 +923,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryRead(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryRead(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -937,7 +937,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryButtonClick(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryButtonClick(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -947,7 +947,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryHeaderTap(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryHeaderTap(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -957,7 +957,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryMenu(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryMenu(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -968,7 +968,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryMenuClick(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryMenuClick(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -980,7 +980,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHistoryClosed(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeChatHistoryClosed(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -990,7 +990,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeChatHisto
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeRenderActions(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeRenderActions(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1005,7 +1005,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeRenderAct
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonActionRender(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAbandonActionRender(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1020,7 +1020,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonAc
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchAction(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchAction(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1036,7 +1036,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchA
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchTranslation(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchTranslation(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1051,7 +1051,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchT
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonTranslation(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAbandonTranslation(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1062,7 +1062,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonTr
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchScreenChange(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchScreenChange(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1077,7 +1077,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchS
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchNotification(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchNotification(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1096,7 +1096,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchN
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeNotifyUnload(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeNotifyUnload(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1110,7 +1110,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeNotifyUnl
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativePollUnload(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativePollUnload(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1125,7 +1125,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativePollUnloa
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeMemoryUsage(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeMemoryUsage(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1136,7 +1136,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeMemoryUsa
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAccountsChanged(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAccountsChanged(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1145,7 +1145,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAccountsC
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchRpc(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchRpc(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1163,7 +1163,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchR
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchSend(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchSend(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1179,7 +1179,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchS
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonSendDispatch(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAbandonSendDispatch(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1193,7 +1193,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonSe
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeCompleteNext(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeCompleteNext(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1207,7 +1207,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeCompleteN
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonDispatch(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAbandonDispatch(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1221,7 +1221,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonDi
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeWriteProgress(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeWriteProgress(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1233,7 +1233,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeWriteProg
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchUpdate(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchUpdate(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1249,7 +1249,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchU
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchUpdateIntercept(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDispatchUpdateIntercept(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1274,7 +1274,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDispatchU
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonUpdateDispatch(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeAbandonUpdateDispatch(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1288,7 +1288,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeAbandonUp
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeInstallInfo<'local>(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeInstallInfo<'local>(
   mut env: EnvUnowned<'local>,
   _this: JObject<'local>,
   ptr: jlong,
@@ -1317,7 +1317,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeInstallIn
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeEvaluate(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeEvaluate(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1358,7 +1358,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeEvaluate(
 
 /// [callback] is a `QuickJs.EvalCallback`, answered exactly once, possibly while the engine closes
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeEvaluateInspected(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeEvaluateInspected(
   mut env: EnvUnowned,
   _this: JObject,
   ptr: jlong,
@@ -1394,7 +1394,7 @@ pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeEvaluateI
 }
 
 #[no_mangle]
-pub extern "system" fn Java_desu_inugram_helpers_plugins_QuickJs_nativeDestroy(
+pub extern "system" fn Java_xie_fa_gram_helpers_plugins_QuickJs_nativeDestroy(
   _env: EnvUnowned,
   _this: JObject,
   ptr: jlong,

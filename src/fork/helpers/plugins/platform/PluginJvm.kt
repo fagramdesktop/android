@@ -76,8 +76,23 @@ object PluginJvm : SessionResource {
     const val DEX_LIMIT_BYTES = 8L * 1024 * 1024
 
     internal const val ENGINE_PACKAGE = "xie.fa.gram.helpers.plugins."
+    private const val INUGRAM_ENGINE_PACKAGE = "desu.inugram.helpers.plugins."
 
-    internal fun isEnginePackage(name: String): Boolean = name.startsWith(ENGINE_PACKAGE)
+    private const val FAGRAM_PREFIX = "xie.fa.gram."
+    private const val INUGRAM_PREFIX = "desu.inugram."
+
+    internal fun isEnginePackage(name: String): Boolean =
+        name.startsWith(ENGINE_PACKAGE) || name.startsWith(INUGRAM_ENGINE_PACKAGE)
+
+    internal fun compatClassCandidates(name: String): List<String> {
+        if (name.startsWith(FAGRAM_PREFIX)) {
+            return listOf(name, INUGRAM_PREFIX + name.removePrefix(FAGRAM_PREFIX))
+        }
+        if (name.startsWith(INUGRAM_PREFIX)) {
+            return listOf(name, FAGRAM_PREFIX + name.removePrefix(INUGRAM_PREFIX))
+        }
+        return listOf(name)
+    }
 
     private const val ROOT = "inu_plugin_dex"
 
@@ -187,14 +202,23 @@ object PluginJvm : SessionResource {
                 val previousLoaders = loaders.toList()
                 val parent = object : ClassLoader(PluginJvm::class.java.classLoader) {
                     override fun findClass(name: String): Class<*> {
-                        for (loader in previousLoaders) {
-                            try { return Class.forName(name, false, loader) } catch (_: ClassNotFoundException) {}
+                        for (candidate in compatClassCandidates(name)) {
+                            for (loader in previousLoaders) {
+                                try { return Class.forName(candidate, false, loader) } catch (_: ClassNotFoundException) {}
+                            }
                         }
                         throw ClassNotFoundException(name)
                     }
                 }
                 val prepared = try {
-                    PluginJvmClass.prepare(name, args.map(::decodeArg), { type -> Class.forName(type, false, parent).also(::checkClass) }, parent, session.plugin.id) { callback, self, arguments ->
+                    PluginJvmClass.prepare(name, args.map(::decodeArg), { type ->
+                        var resolved: Class<*>? = null
+                        for (candidate in compatClassCandidates(type)) {
+                            resolved = runCatching { Class.forName(candidate, false, parent) }.getOrNull()
+                            if (resolved != null) break
+                        }
+                        (resolved ?: Class.forName(type, false, parent)).also(::checkClass)
+                    }, parent, session.plugin.id) { callback, self, arguments ->
                         check(live && session.isCurrent()) { "defineClass: plugin has unloaded" }
                         val inputs = ArrayList<String>()
                         try {
@@ -496,8 +520,12 @@ object PluginJvm : SessionResource {
         }
 
         private fun classFor(name: String): Class<*> {
-            for (loader in loaders) {
-                runCatching { return Class.forName(name, false, loader) }
+            for (candidate in compatClassCandidates(name)) {
+                for (loader in loaders) {
+                    runCatching { return Class.forName(candidate, false, loader) }
+                }
+                val cls = runCatching { Class.forName(candidate, false, PluginJvm::class.java.classLoader) }.getOrNull()
+                if (cls != null) return cls
             }
             // without initializing: naming a class must not run its static block
             return try {

@@ -1627,7 +1627,7 @@ mod bundled_oracles {
     state.settle(&ctx, invoke_id, &view);
 
     let lines = lines.borrow();
-    crate::testing::harness::assert_oracle_exact(&lines, "globals test done", 38);
+    crate::testing::harness::assert_oracle_exact(&lines, "globals test done", 39);
   }
 
   #[test]

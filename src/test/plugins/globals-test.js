@@ -106,6 +106,8 @@ expectDomException('structuredClone refuses a promise', 'DataCloneError', () => 
 expectDomException('structuredClone refuses a symbol', 'DataCloneError', () => structuredClone(Symbol('x')))
 expectDomException('structuredClone refuses a weak collection', 'DataCloneError', () => structuredClone(new WeakMap()))
 
+check('fa alias matches inu', fa === inu)
+
 inu.invokeRpc({ _: 'help.getConfig' }).then(
   (config) => {
     if (config === null || config._ !== 'config') return fail('invokeRpc returned a view', `_ = ${config?._}`)

@@ -27,7 +27,7 @@ fn lsposed_is_identified_by_soname_or_module_path() {
   ];
   assert_eq!(unsafe { read_soname(0, &dynamic) }, Some(c"liblspd.so"));
   assert!(is_lsposed_name(c"/data/adb/modules/zygisk_lsposed/zygisk/arm64-v8a.so"));
-  assert!(!is_lsposed_name(c"/data/app/desu.inugram/lib/arm64/liblsplant.so"));
+  assert!(!is_lsposed_name(c"/data/app/xie.fa.gram/lib/arm64/liblsplant.so"));
 }
 
 /// Builds an ELF64 image with the symbol tables described, plus an optional `.gnu_debugdata`
